@@ -15,3 +15,5 @@ TEST_CASE("Datamodel", "[set get]") {
 
     REQUIRE(value == "value");
 }
+
+
