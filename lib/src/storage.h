@@ -1,8 +1,9 @@
 #pragma once
-#include "../include/settings.h"
 #include <memory>
 #include <string>
 #include <vector>
+
+#include "../include/settings.h"
 
 class ITableList {
 public:
@@ -18,7 +19,8 @@ using JournalBlob = std::vector<std::string>;
 
 class IStorage {
 public:
-    // Записывает операции в журнал. Каждый элемент вектора - отдельная операция.
+    // Записывает операции в журнал. Каждый элемент вектора - отдельная
+    // операция.
     virtual bool WriteToJournal(std::vector<std::string> ops) = 0;
 
     // Записывает новую таблицу в базу
@@ -27,7 +29,8 @@ public:
     // Возвращает view интерфейс на текущие таблицы
     virtual ITableListPtr GetTableList() = 0;
 
-    // Возвращает журнал в виде бинарных данных (может быть полезно при восстановлении базы)
+    // Возвращает журнал в виде бинарных данных (может быть полезно при
+    // восстановлении базы)
     virtual JournalBlob GetJournal() = 0;
 };
 using IStoragePtr = std::shared_ptr<IStorage>;
