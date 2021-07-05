@@ -8,9 +8,9 @@ PRIVATE
     include/settings.h
     src/datamodel.h
     src/storage.h
-    src/common.h
     src/datamodel.cpp
-)
+    src/storage.cpp
+ )
 
 target_link_libraries(sdb_lib
 PRIVATE

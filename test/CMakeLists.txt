@@ -5,7 +5,8 @@ add_executable(lib_tests)
 target_sources(lib_tests 
 PRIVATE
     datamodel_test.cpp
-)
+    storage_test.cpp
+ )
 
 target_link_libraries (lib_tests 
 PUBLIC 
