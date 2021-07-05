@@ -1,0 +1,8 @@
+{
+    "name": "ssypdblib",
+    "version": "0.0.1",
+  "dependencies": [
+    "fmt",
+    "catch2"
+  ]
+}
