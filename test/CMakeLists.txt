@@ -1,4 +1,4 @@
- project(sdb_lib_tests)
+project(sdb_lib_tests)
 
 add_executable(lib_tests)
 
