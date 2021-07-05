@@ -1,7 +1,7 @@
 #include "datamodel.h"
 
-#include <string>
 #include <map>
+#include <string>
 
 class Datamodel : public IDatamodel {
 public:
@@ -24,7 +24,6 @@ public:
 private:
     std::map<std::string, std::string> storage_;
 };
-
 
 IDatamodelPtr CreateDatamodel(IStoragePtr storage, DbSettings settings) {
     return std::make_shared<Datamodel>();
