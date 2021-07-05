@@ -1,9 +1,8 @@
 #pragma once
-#include "common.h"
 #include "../include/settings.h"
-
 #include <memory>
 #include <string>
+#include "datamodel.h"
 
 class ITableList {
 public:
