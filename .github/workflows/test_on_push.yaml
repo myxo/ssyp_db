@@ -1,0 +1,19 @@
+name: C/C++ CI
+
+on: [push]
+
+jobs:
+  ubuntu-build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+    - name: Build project
+      run: mkdir build
+      run: cd build
+      run: cmake .. "-DCMAKE_TOOLCHAIN_FILE=/usr/share/vcpkg/scripts/buildsystems/vcpkg.cmake"
+      run: make
+    - name: Run tests
+      run: coverage run ./test/lib_tests
+    - name: Tests report
+      run: coverage report
