@@ -9,24 +9,9 @@ TEST_CASE("Datamodel", "[set get]") {
     Operations ops;
     ops.push_back(Op{ "key", "value", Op::Type::Update });
 
-    datamodel->LSTMCommit(ops);
+    datamodel->Commit(ops);
     std::string value;
-    datamodel->LSMTGetValue("key", value);
+    datamodel->GetValue("key", value);
 
     REQUIRE(value == "value");
-}
-
-TEST_CASE("Datamodel", "[write get]") {
-    auto datamodel = CreateDatamodel(nullptr, DbSettings{});
-
-    Operations ops;
-    ops.push_back(Op{ "key", "value", Op::Type::Update });
-
-    DbSettings settings;
-    settings.in_memory = true;
-    auto storage = CreateStorage(settings);
-
-    datamodel->SerializeOps(ops, storage)
-
-    REQUIRE(storage->GetJournal[0] == "Update key value");
 }
