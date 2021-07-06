@@ -11,6 +11,9 @@ std::string InMemoryTableList::GetTable(size_t index) {
     return (*tables_)[index];
 }
 
+InMemoryStorage::InMemoryStorage() { 
+    table_list_ = std::make_shared<std::vector<std::string>>();
+}
 bool InMemoryStorage::WriteToJournal(std::vector<std::string> ops) {
     for (auto const& it : ops) {
         journal_.push_back(it);
@@ -18,12 +21,11 @@ bool InMemoryStorage::WriteToJournal(std::vector<std::string> ops) {
     return true;
 }
 bool InMemoryStorage::AddTable(std::string blob) {
-    table_list_.push_back(blob);
+    table_list_->push_back(blob);
     return true;
 }
 ITableListPtr InMemoryStorage::GetTableList() {
-    InMemoryTableList tables(
-        std::make_shared<std::vector<std::string>>(table_list_));
+    InMemoryTableList tables(table_list_);
     return std::make_shared<InMemoryTableList>(tables);
 }
 JournalBlob InMemoryStorage::GetJournal() {

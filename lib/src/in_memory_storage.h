@@ -13,11 +13,12 @@ private:
 
 class InMemoryStorage : public IStorage {
 public:
+    InMemoryStorage();
     bool WriteToJournal(std::vector<std::string> ops) override;
     bool AddTable(std::string blob) override;
     ITableListPtr GetTableList() override;
     JournalBlob GetJournal() override;
 private:
     std::vector<std::string> journal_;
-    std::vector<std::string> table_list_;
+    std::shared_ptr<std::vector<std::string>> table_list_;
 };
