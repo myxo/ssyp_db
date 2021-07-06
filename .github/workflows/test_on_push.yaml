@@ -17,7 +17,7 @@ jobs:
           ./bootstrap-vcpkg.sh &&
           ./vcpkg integrate install
       - name: catch2 installation
-        run: sudo apt-get install catch2
+        run: ./vcpkg install catch2
       - name: Build
         run: mkdir build && 
           cd build && 
