@@ -1,0 +1,22 @@
+name: Unit tests check
+on: [push]
+jobs:
+  Explore-GitHub-Actions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: vcpkg installation
+        run: git clone https://github.com/Microsoft/vcpkg.git &&
+          cd vcpkg &&
+          ./bootstrap-vcpkg.sh &&
+          ./vcpkg integrate install
+      - name: Build
+        run: mkdir build && 
+          cd build && 
+          sudo cmake .. "-DCMAKE_TOOLCHAIN_FILE=/home/runner/work/ssyp_db/ssyp_db/vcpkg/scripts/buildsystems/vcpkg.cmake" && 
+          sudo make
+      - name: Run tests
+        run: cd build &&
+          make test &&
+          cat Testing/Temporary/LastTest.log

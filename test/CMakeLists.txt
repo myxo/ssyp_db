@@ -19,3 +19,5 @@ PUBLIC
     ../lib/include
     ../lib/src
 )
+
+add_test(lib_tests lib_tests)
