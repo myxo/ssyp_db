@@ -8,5 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(fmt CONFIG REQUIRED)
 find_package(Catch2 REQUIRED)
 
+enable_testing()
+
 add_subdirectory(lib)
 add_subdirectory(test)

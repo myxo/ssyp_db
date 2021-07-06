@@ -17,4 +17,6 @@ jobs:
           sudo cmake .. "-DCMAKE_TOOLCHAIN_FILE=/home/runner/work/ssyp_db/ssyp_db/vcpkg/scripts/buildsystems/vcpkg.cmake" && 
           sudo make
       - name: Run tests
-        run: ./build/test/lib_tests  
+        run: cd build &&
+          make test &&
+          cat Testing/Temporary/LastTest.log
