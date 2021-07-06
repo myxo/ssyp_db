@@ -1,17 +1,14 @@
 #pragma once
-#include "storage.h"
-#include "../include/settings.h"
-
-#include <vector>
 #include <memory>
+#include <vector>
+
+#include "../include/settings.h"
+#include "storage.h"
 
 struct Op {
-    enum class Type {
-        Update,
-        Remove
-    };
+    enum class Type { Update, Remove };
     std::string key;
-    std::string value; // empty if type is Remove
+    std::string value;  // empty if type is Remove
     Type type;
 };
 

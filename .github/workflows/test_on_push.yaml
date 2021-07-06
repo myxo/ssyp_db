@@ -1,0 +1,16 @@
+name: Unit tests check
+on: [push]
+jobs:
+  Explore-GitHub-Actions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Build
+        run: mkdir build && 
+          cd build && 
+          sudo cmake .. && 
+          sudo make
+      - name: Run tests
+        run: cd build &&
+          ctest --output-on-failure
