@@ -2,6 +2,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <map>
 
 #include "../include/settings.h"
 
@@ -12,6 +13,8 @@ public:
     // Возвращает таблицу в виде бинарного блоба.
     // TODO: возвращать интерфейс для чтения из файла
     virtual std::string GetTable(size_t index) = 0;
+
+    virtual bool AddTable(std::string blob) = 0;
 };
 using ITableListPtr = std::shared_ptr<ITableList>;
 
