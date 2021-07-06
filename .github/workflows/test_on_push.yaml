@@ -20,5 +20,5 @@ jobs:
         run: mkdir build && 
           cd build && 
           sudo cmake .. "-DCMAKE_TOOLCHAIN_FILE=/home/runner/work/ssyp_db/ssyp_db/vcpkg/scripts/buildsystems/vcpkg.cmake" && 
-          make
+          sudo make
       - run: echo "🍏 This job's status is ${{ job.status }}."
