@@ -16,11 +16,9 @@ jobs:
           cd vcpkg &&
           ./bootstrap-vcpkg.sh &&
           ./vcpkg integrate install
-      - name: catch2 installation
-        run: ./vcpkg/vcpkg install catch2
       - name: Build
         run: mkdir build && 
           cd build && 
-          sudo cmake .. "-DCMAKE_TOOLCHAIN_FILE=/usr/share/vcpkg/scripts/buildsystems/vcpkg.cmake" && 
+          sudo cmake .. "-DCMAKE_TOOLCHAIN_FILE=/home/runner/work/ssyp_db/ssyp_db/vcpkg/scripts/buildsystems/vcpkg.cmake" && 
           make
       - run: echo "🍏 This job's status is ${{ job.status }}."
