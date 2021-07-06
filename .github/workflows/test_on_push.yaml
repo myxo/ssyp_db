@@ -18,5 +18,4 @@ jobs:
           sudo make
       - name: Run tests
         run: cd build &&
-          make test &&
-          cat Testing/Temporary/LastTest.log
+          ctest --output-on-failure
