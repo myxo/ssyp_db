@@ -4,6 +4,7 @@ jobs:
   Explore-GitHub-Actions:
     runs-on: ubuntu-latest
     steps:
+      - name: Check out repository code
         uses: actions/checkout@v2
       - name: vcpkg installation
         run: git clone https://github.com/Microsoft/vcpkg.git &&
