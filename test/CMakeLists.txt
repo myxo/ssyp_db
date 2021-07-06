@@ -11,11 +11,11 @@ PRIVATE
 target_link_libraries (lib_tests 
 PUBLIC 
     sdb_lib
-    Catch2::Catch2
 )
 
 target_include_directories(lib_tests
 PUBLIC
+    ../dependencies
     ../lib/include
     ../lib/src
 )

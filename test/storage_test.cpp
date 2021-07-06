@@ -1,6 +1,6 @@
 #include "storage.h"
 
-#include <catch2/catch.hpp>
+#include "catch2/catch.hpp"
 
 TEST_CASE("Storage", "[write get]") {
     DbSettings settings;
