@@ -1,7 +1,7 @@
 #include "datamodel.h"
 
 #define CATCH_CONFIG_MAIN
-#include <catch2/catch.hpp>
+#include "catch2/catch.hpp"
 
 TEST_CASE("Datamodel", "[set get]") {
     auto datamodel = CreateDatamodel(nullptr, DbSettings{});

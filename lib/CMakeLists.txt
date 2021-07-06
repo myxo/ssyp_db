@@ -16,5 +16,9 @@ PRIVATE
 
 target_link_libraries(sdb_lib
 PRIVATE
-    fmt::fmt
+)
+
+target_include_directories(sdb_lib
+PUBLIC
+    ../dependencies
 )
