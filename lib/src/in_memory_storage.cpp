@@ -4,10 +4,10 @@ InMemoryTableList::InMemoryTableList(
     std::shared_ptr<std::vector<std::string>> tables) {
     tables_ = tables;
 }
-size_t InMemoryTableList::TableCount() {
+const size_t InMemoryTableList::TableCount() {
     return tables_->size();
 }
-std::string InMemoryTableList::GetTable(size_t index) {
+const std::string InMemoryTableList::GetTable(size_t index) {
     return (*tables_)[index];
 }
 

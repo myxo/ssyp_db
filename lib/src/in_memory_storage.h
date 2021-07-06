@@ -4,8 +4,8 @@
 class InMemoryTableList : public ITableList {
 public:
     InMemoryTableList(std::shared_ptr<std::vector<std::string>> tables);
-    size_t TableCount() override;
-    std::string GetTable(size_t index) override;
+    const size_t TableCount() override;
+    const std::string GetTable(size_t index) override;
 
 private:
     std::shared_ptr<std::vector<std::string>> tables_;

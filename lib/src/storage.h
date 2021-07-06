@@ -8,11 +8,11 @@
 
 class ITableList {
 public:
-    virtual size_t TableCount() = 0;
+    virtual const size_t TableCount() = 0;
 
     // Возвращает таблицу в виде бинарного блоба.
     // TODO: возвращать интерфейс для чтения из файла
-    virtual std::string GetTable(size_t index) = 0;
+    virtual const std::string GetTable(size_t index) = 0;
 };
 using ITableListPtr = std::shared_ptr<ITableList>;
 
