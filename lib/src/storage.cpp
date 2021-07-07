@@ -1,4 +1,5 @@
 #include "storage.h"
+
 #include "in_memory_storage.h"
 
 IStoragePtr CreateStorage(DbSettings settings) {

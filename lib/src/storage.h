@@ -1,8 +1,8 @@
 #pragma once
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
-#include <map>
 
 #include "../include/settings.h"
 
@@ -25,7 +25,7 @@ public:
     virtual bool WriteToJournal(std::vector<std::string> ops) = 0;
 
     // Записывает новую таблицу в базу
-    virtual bool PushJournalToTable() = 0;
+    virtual bool PushJournalToTable(std::string blob) = 0;
 
     // Возвращает view интерфейс на текущие таблицы
     virtual ITableListPtr GetTableList() = 0;
