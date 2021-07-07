@@ -8,8 +8,10 @@ PRIVATE
     include/settings.h
     src/datamodel.h
     src/storage.h
+    src/in_memory_storage.h
     src/datamodel.cpp
     src/storage.cpp
+    src/in_memory_storage.cpp
  )
 
 target_link_libraries(sdb_lib
