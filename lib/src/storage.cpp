@@ -7,15 +7,10 @@ class StorageInMemory : public IStorage {
         }
         return true;
     }
-    bool AddTable(std::string blob) override {
-        return false;
-	}
-    ITableListPtr GetTableList() override {
-        return nullptr;
-    }
-    JournalBlob GetJournal() override {
-        return journal;
-    }
+    bool AddTable(std::string blob) override { return false; }
+    ITableListPtr GetTableList() override { return nullptr; }
+    JournalBlob GetJournal() override { return journal; }
+
 private:
     std::vector<std::string> journal;
 };
