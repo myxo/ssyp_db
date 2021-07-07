@@ -11,19 +11,21 @@ TEST_CASE("Storage", "[write get]") {
     REQUIRE(storage->GetJournal()[0] == "key,value,update");
 }
 
-TEST_CASE("TableList", "[count get]") {
+TEST_CASE("TableList", "[push count get]") {
     DbSettings settings;
     settings.in_memory = true;
     auto storage = CreateStorage(settings);
-    auto tables = storage->GetTableList();
-    REQUIRE(tables->TableCount() == 0);
 
-    storage->AddTable("key1,value1");
+    auto tables = storage->GetTableList();
+    storage->WriteToJournal({"key1,value1;"});
+    storage->PushJournalToTable();
     REQUIRE(tables->TableCount() == storage->GetTableList()->TableCount());
     REQUIRE(tables->TableCount() == 1);
-    REQUIRE(tables->GetTable(0) == "key1,value1");
+    REQUIRE(tables->GetTable(0) == "key1,value1;");
+    REQUIRE(storage->GetJournal().size() == 0);
 
-    storage->AddTable("key2,value2");
+    storage->WriteToJournal({"key1,value1;", "key2,value2;"});
+    storage->PushJournalToTable();
     REQUIRE(tables->TableCount() == 2);
-    REQUIRE(tables->GetTable(1) == "key2,value2");
+    REQUIRE(tables->GetTable(1) == "key1,value1;key2,value2;");
 }

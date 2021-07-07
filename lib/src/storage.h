@@ -8,11 +8,11 @@
 
 class ITableList {
 public:
-    virtual const size_t TableCount() = 0;
+    virtual size_t TableCount() const = 0;
 
     // Возвращает таблицу в виде бинарного блоба.
     // TODO: возвращать интерфейс для чтения из файла
-    virtual const std::string GetTable(size_t index) = 0;
+    virtual std::string GetTable(size_t index) const = 0;
 };
 using ITableListPtr = std::shared_ptr<ITableList>;
 
@@ -25,7 +25,7 @@ public:
     virtual bool WriteToJournal(std::vector<std::string> ops) = 0;
 
     // Записывает новую таблицу в базу
-    virtual bool AddTable(std::string blob) = 0;
+    virtual bool PushJournalToTable() = 0;
 
     // Возвращает view интерфейс на текущие таблицы
     virtual ITableListPtr GetTableList() = 0;

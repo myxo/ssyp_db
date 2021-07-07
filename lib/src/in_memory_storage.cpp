@@ -1,14 +1,14 @@
 #include "in_memory_storage.h"
 
 InMemoryTableList::InMemoryTableList(
-    std::shared_ptr<std::vector<std::string>> tables) {
-    tables_ = tables;
-}
-const size_t InMemoryTableList::TableCount() {
+    std::shared_ptr<std::vector<std::string>> tables)
+    : tables_(tables) {}
+
+size_t InMemoryTableList::TableCount() const {
     return tables_->size();
 }
-const std::string InMemoryTableList::GetTable(size_t index) {
-    return (*tables_)[index];
+std::string InMemoryTableList::GetTable(size_t index) const {
+    return (*tables_).at(index);
 }
 
 InMemoryStorage::InMemoryStorage() { 
@@ -20,13 +20,17 @@ bool InMemoryStorage::WriteToJournal(std::vector<std::string> ops) {
     }
     return true;
 }
-bool InMemoryStorage::AddTable(std::string blob) {
+bool InMemoryStorage::PushJournalToTable() {
+    std::string blob;
+    for (auto const& it : journal_) {
+        blob += it;
+    }
+    journal_.resize(0);
     table_list_->push_back(blob);
     return true;
 }
 ITableListPtr InMemoryStorage::GetTableList() {
-    InMemoryTableList tables(table_list_);
-    return std::make_shared<InMemoryTableList>(tables);
+    return std::make_shared<InMemoryTableList>((table_list_));
 }
 JournalBlob InMemoryStorage::GetJournal() {
     return journal_;
