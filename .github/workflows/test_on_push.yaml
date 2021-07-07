@@ -1,7 +1,7 @@
 name: Unit tests check
 on: [pull_request ]
 jobs:
-  Explore-GitHub-Actions:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
