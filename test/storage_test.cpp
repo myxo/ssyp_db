@@ -2,7 +2,7 @@
 
 #include "catch2/catch.hpp"
 
-TEST_CASE("Storage", "[write get]") {
+TEST_CASE("InMemoryStorage", "[write get]") {
     DbSettings settings;
     settings.in_memory = true;
     auto storage = CreateStorage(settings);
@@ -11,7 +11,7 @@ TEST_CASE("Storage", "[write get]") {
     REQUIRE(storage->GetJournal()[0] == "key,value,update");
 }
 
-TEST_CASE("TableList", "[push count get]") {
+TEST_CASE("InMemoryTableList", "[push count get]") {
     DbSettings settings;
     settings.in_memory = true;
     auto storage = CreateStorage(settings);
@@ -28,4 +28,12 @@ TEST_CASE("TableList", "[push count get]") {
     storage->PushJournalToTable(storage->GetJournal()[0]);
     REQUIRE(tables->TableCount() == 2);
     REQUIRE(tables->GetTable(1) == "key2,value2");
+}
+
+TEST_CASE("Storage", "[journal]") { 
+    DbSettings settings;
+    auto storage = CreateStorage(settings);
+    storage->WriteToJournal({"key,value,update"});
+
+    REQUIRE(storage->GetJournal()[0] == "key,value,update");
 }
