@@ -25,8 +25,7 @@ public:
         for (auto const& op : ops) {
             if (op.type == Op::Type::Remove) {
                 storage_.erase(op.key);
-            }
-            else {
+            } else {
                 storage_[op.key] = op.value;
             }
         }
@@ -43,14 +42,13 @@ public:
         return false;
     }
 
-    void SerializeOps(Operations ops, IStorage & journal) {
+    void SerializeOps(Operations ops, IStorage& journal) {
         std::string temp;
         std::vector<std::string> output = {};
         for (auto const& op : ops) {
             if (op.type == Op::Type::Remove) {
                 temp = "Remove " + op.key;
-            }
-            else {
+            } else {
                 temp = "Update " + op.key + " " + op.value;
             }
             output.push_back(temp);
