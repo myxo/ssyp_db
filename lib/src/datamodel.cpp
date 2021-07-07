@@ -43,7 +43,7 @@ public:
         return false;
     }
 
-    void SerializeOps(Operations ops, IStorage journal) {
+    void SerializeOps(Operations ops, IStorage & journal) {
         std::string temp;
         std::vector<std::string> output = {};
         for (auto const& op : ops) {
