@@ -33,7 +33,7 @@ TEST_CASE("InMemoryTableList", "[push count get]") {
 TEST_CASE("Storage", "[journal]") { 
     DbSettings settings;
     auto storage = CreateStorage(settings);
-    storage->WriteToJournal({"key,value,update"});
+    REQUIRE(storage->WriteToJournal({"key,value,update"}));
 
     REQUIRE(storage->GetJournal()[0] == "key,value,update");
 }

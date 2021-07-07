@@ -9,6 +9,9 @@ public:
           tablelist_filename_(tablelist_filename + ".tablelist") {}
     bool WriteToJournal(std::vector<std::string> ops) override {
         std::ofstream file;
+        if (!file) {
+            return false;
+        }
         file.open(journal_filename_, std::ios::app);
         for (auto const& it : ops) {
             file << it << std::endl;
@@ -23,6 +26,9 @@ public:
         std::ifstream file;
         file.open(journal_filename_);
         std::vector<std::string> journal;
+        if (!file) {
+            return {"null"};
+        }
         for (int i = 0; i < journal_size_; i++) {
             journal.resize(journal.size() + 1);
             file >> journal[journal.size() - 1];
