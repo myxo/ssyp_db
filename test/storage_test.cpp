@@ -36,23 +36,23 @@ TEST_CASE("Storage", "[journal]") {
     settings.filename = "file";
     {
         auto storage = CreateStorage(settings);
-        REQUIRE(storage->WriteToJournal({"key1\nvalue1"}));
+        REQUIRE(storage->WriteToJournal({"key1,value1"}));
     }
     {
         auto storage = CreateStorage(settings);
         auto journal = storage->GetJournal();
         REQUIRE(journal.size() == 1);
-        REQUIRE(journal[0] == "key1\nvalue1");
-        REQUIRE(storage->WriteToJournal({"key2\nvalue2"}));
+        REQUIRE(journal[0] == "key1,value1");
+        REQUIRE(storage->WriteToJournal({"key2,value2"}));
     }
     {
         
         auto storage = CreateStorage(settings);
         auto journal = storage->GetJournal();
         REQUIRE(journal.size() == 2);
-        REQUIRE(journal[0] == "key1\nvalue1");
-        REQUIRE(journal[1] == "key2\nvalue2");
-        REQUIRE(storage->WriteToJournal({"key\nvalue"}));
+        REQUIRE(journal[0] == "key1,value1");
+        REQUIRE(journal[1] == "key2,value2");
+        REQUIRE(storage->WriteToJournal({"key,value"}));
     }
     std::remove("file.journal");
 }
