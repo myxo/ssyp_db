@@ -48,8 +48,7 @@ private:
 
 IStoragePtr CreateStorage(DbSettings settings) {
     if (settings.in_memory) {
-        IStoragePtr storage = std::make_shared<InMemoryStorage>();
-        return storage;
+        return std::make_shared<InMemoryStorage>();
     } else {
         if (settings.filename == "") {
             throw std::runtime_error("Filename is empty");
