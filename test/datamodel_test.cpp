@@ -14,10 +14,9 @@ TEST_CASE("Datamodel", "[set get]") {
     ops.push_back(Op{"key", "", Op::Type::Remove});
     ops.push_back(Op{"key space test", "value with spaces", Op::Type::Update});
 
-
     std::string value;
     datamodel->GetValue("key0", value);
-    REQUIRE(value == "no_value");
+    REQUIRE(datamodel->GetValue("key0", value) == false);
 
     datamodel->Commit(ops);
     datamodel->GetValue("key space test", value);

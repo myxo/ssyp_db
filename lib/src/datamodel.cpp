@@ -36,12 +36,10 @@ public:
                     value = it->substr(it->find(' ') + key.size() + 2);
                     return true;
                 } else {
-                    value = "no_value";
                     return false;
                 }
             }
         }
-        value = "no_value";
         return false;
     }
 
