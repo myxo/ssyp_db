@@ -5,26 +5,53 @@
 
 class Datamodel : public IDatamodel {
 public:
+    Datamodel(IStoragePtr storage, DbSettings settings) {
+        storage_ = storage;
+        journal_ = storage->GetJournal();
+    }
+
     bool Commit(Operations ops) {
+        std::vector<std::string> output = {};
+        std::string temp;
         for (auto const& op : ops) {
-            storage_[op.key] = op.value;
+            if (op.type == Op::Type::Remove) {
+                temp = "Remove " + op.key;
+            } else {
+                temp = "Update " + op.key + " " + op.value;
+            }
+            output.push_back(temp);
+            journal_.push_back(temp);
         }
+        storage_->WriteToJournal(output);
         return true;
     }
 
     bool GetValue(std::string key, std::string& value) {
-        auto it = storage_.find(key);
-        if (it == storage_.end()) {
-            return false;
+        std::string s_type, s_key, s_value;
+        for (auto it = journal_.rbegin(); it != journal_.rend(); it++) {
+            s_key = it->substr(it->find(' ') + 1,
+                               it->find_last_of(' ') - it->find(' ') - 1);
+            if (s_key == key) {
+                s_type = it->substr(0, it->find(' '));
+                if (s_type == "Update") {
+                    value = it->substr(it->find_last_of(' ') + 1);
+                    return true;
+                } else {
+                    value = "no_value";
+                    return false;
+                }
+            }
         }
-        value = it->second;
-        return true;
+        value = "no_value";
+        return false;
     }
 
 private:
-    std::map<std::string, std::string> storage_;
+    IStoragePtr storage_;
+    std::vector<std::string> journal_;
 };
 
 IDatamodelPtr CreateDatamodel(IStoragePtr storage, DbSettings settings) {
-    return std::make_shared<Datamodel>();
+    IDatamodelPtr output = std::make_shared<Datamodel>(storage, settings);
+    return output;
 }
