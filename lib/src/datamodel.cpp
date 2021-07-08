@@ -5,7 +5,10 @@
 
 class Datamodel : public IDatamodel {
 public:
-    Datamodel(IStoragePtr storage, DbSettings settings) { storage_ = storage; }
+    Datamodel(IStoragePtr storage, DbSettings settings) {
+        storage_ = storage;
+        journal_ = storage->GetJournal();
+    }
 
     bool Commit(Operations ops) {
         std::vector<std::string> output = {};
@@ -17,6 +20,7 @@ public:
                 temp = "Update " + op.key + " " + op.value;
             }
             output.push_back(temp);
+            journal_.push_back(temp);
         }
         storage_->WriteToJournal(output);
         return true;
@@ -24,7 +28,6 @@ public:
 
     bool GetValue(std::string key, std::string& value) {
         std::string s_type, s_key, s_value;
-        std::vector<std::string> journal_ = storage_->GetJournal();
         for (auto it = journal_.rbegin(); it != journal_.rend(); it++) {
             s_key = it->substr(it->find(' ') + 1,
                                it->find_last_of(' ') - it->find(' ') - 1);
@@ -45,6 +48,7 @@ public:
 
 private:
     IStoragePtr storage_;
+    std::vector<std::string> journal_;
 };
 
 IDatamodelPtr CreateDatamodel(IStoragePtr storage, DbSettings settings) {
