@@ -29,12 +29,11 @@ public:
     bool GetValue(std::string key, std::string& value) {
         std::string s_type, s_key, s_value;
         for (auto it = journal_.rbegin(); it != journal_.rend(); it++) {
-            s_key = it->substr(it->find(' ') + 1,
-                               it->find_last_of(' ') - it->find(' ') - 1);
+            s_key = it->substr(it->find(' ') + 1, key.size());
             if (s_key == key) {
                 s_type = it->substr(0, it->find(' '));
                 if (s_type == "Update") {
-                    value = it->substr(it->find_last_of(' ') + 1);
+                    value = it->substr(it->find(' ') + key.size() + 2);
                     return true;
                 } else {
                     value = "no_value";
