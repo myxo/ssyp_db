@@ -37,7 +37,8 @@ public:
         journal.pop_back();
         return journal;
     }
-private: 
+
+private:
     std::shared_ptr<std::vector<std::string>> table_list_;
     std::string journal_filename_;
     std::string tablelist_filename_;
