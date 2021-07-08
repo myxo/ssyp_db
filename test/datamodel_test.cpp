@@ -4,7 +4,10 @@
 #include "catch2/catch.hpp"
 
 TEST_CASE("Datamodel", "[set get]") {
-    auto datamodel = CreateDatamodel(nullptr, DbSettings{});
+    DbSettings settings;
+    settings.in_memory = true;
+    auto storage = CreateStorage(settings);
+    auto datamodel = CreateDatamodel(storage, DbSettings{});
 
     Operations ops;
     ops.push_back(Op{"key", "value", Op::Type::Update});
@@ -14,4 +17,5 @@ TEST_CASE("Datamodel", "[set get]") {
     datamodel->GetValue("key", value);
 
     REQUIRE(value == "value");
+    REQUIRE(storage->GetJournal()[0] == "Update key value");
 }
