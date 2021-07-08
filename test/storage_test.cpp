@@ -1,14 +1,14 @@
 #include "storage.h"
-
+#include <fstream>
 #include "catch2/catch.hpp"
 
 TEST_CASE("InMemoryStorage", "[write get]") {
     DbSettings settings;
     settings.in_memory = true;
     auto storage = CreateStorage(settings);
-    storage->WriteToJournal({"key,value,update"});
+    storage->WriteToJournal({"key,value"});
 
-    REQUIRE(storage->GetJournal()[0] == "key,value,update");
+    REQUIRE(storage->GetJournal()[0] == "key,value");
 }
 
 TEST_CASE("InMemoryTableList", "[push count get]") {
@@ -30,10 +30,29 @@ TEST_CASE("InMemoryTableList", "[push count get]") {
     REQUIRE(tables->GetTable(1) == "key2,value2");
 }
 
-TEST_CASE("Storage", "[journal]") { 
+TEST_CASE("Storage", "[journal]") {
     DbSettings settings;
-    auto storage = CreateStorage(settings);
-    REQUIRE(storage->WriteToJournal({"key,value,update"}));
-
-    REQUIRE(storage->GetJournal()[0] == "key,value,update");
+    std::remove("file.journal");
+    settings.filename = "file";
+    {
+        auto storage = CreateStorage(settings);
+        REQUIRE(storage->WriteToJournal({"key1\nvalue1"}));
+    }
+    {
+        auto storage = CreateStorage(settings);
+        auto journal = storage->GetJournal();
+        REQUIRE(journal.size() == 1);
+        REQUIRE(journal[0] == "key1\nvalue1");
+        REQUIRE(storage->WriteToJournal({"key2\nvalue2"}));
+    }
+    {
+        
+        auto storage = CreateStorage(settings);
+        auto journal = storage->GetJournal();
+        REQUIRE(journal.size() == 2);
+        REQUIRE(journal[0] == "key1\nvalue1");
+        REQUIRE(journal[1] == "key2\nvalue2");
+        REQUIRE(storage->WriteToJournal({"key\nvalue"}));
+    }
+    std::remove("file.journal");
 }
