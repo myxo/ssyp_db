@@ -1,7 +1,7 @@
 name: Unit tests check
-on: [push]
+on: [pull_request ]
 jobs:
-  Explore-GitHub-Actions:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
@@ -9,8 +9,8 @@ jobs:
       - name: Build
         run: mkdir build && 
           cd build && 
-          sudo cmake .. && 
-          sudo make
+          cmake .. && 
+          make
       - name: Run tests
         run: cd build &&
           ctest --output-on-failure
