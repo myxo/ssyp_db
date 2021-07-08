@@ -12,6 +12,8 @@ public:
     bool WriteToJournal(std::vector<std::string> ops) override {
         std::ofstream file(journal_filename_, std::ios::app);
         if (!file) {
+            throw std::runtime_error(std::string("Cannot open journal file: ") +
+                                     journal_filename_);
             return false;
         }
         for (auto const& it : ops) {
