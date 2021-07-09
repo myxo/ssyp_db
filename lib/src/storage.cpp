@@ -17,7 +17,9 @@ public:
             return false;
         }
         for (auto const& it : ops) {
-            file << it << '\0';
+            int32_t tmp = (it.size());
+            file.write((const char*)&tmp, sizeof(int32_t));
+            file << it;
         }
         file.close();
         return true;
@@ -25,18 +27,25 @@ public:
     bool PushJournalToTable(std::string blob) override { return false; }
     ITableListPtr GetTableList() override { return nullptr; }
     JournalBlob GetJournal() override {
-        std::ifstream file(journal_filename_);
+        FILE* file = fopen(journal_filename_.c_str(), "rb");
         std::vector<std::string> journal;
         if (!file) {
             throw std::runtime_error("Cannot open journal file: " +
                                      journal_filename_);
         }
-        while (!(file.eof())) {
-            journal.resize(journal.size() + 1);
-            std::getline(file, journal[journal.size() - 1], '\0');
+        while (!(feof(file))) {
+            int32_t len;
+            fread((void*)&len, sizeof(int32_t), 1, file);
+            if (feof(file)) break;
+            journal.push_back({});
+            journal.back().resize(len);
+            fread(journal.back().data(), sizeof(char), len, file);
+            if (feof(file)) {
+                journal.pop_back();
+                break;
+            }
         }
-        file.close();
-        journal.pop_back();
+        fclose(file);
         return journal;
     }
 
