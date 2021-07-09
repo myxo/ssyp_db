@@ -74,3 +74,30 @@ TEST_CASE("Journal with zero", "[]") {
     REQUIRE(journal.size() == 1);
     std::remove("file.journal");
 }
+
+TEST_CASE("InFileTableList", "[push count get]") {
+    std::remove("file.journal");
+    std::remove("file.tablelist");
+    DbSettings settings;
+    settings.filename = "file";
+    {
+        auto storage = CreateStorage(settings);
+        auto tables = storage->GetTableList();
+        storage->WriteToJournal({"key1,value1"});
+        storage->PushJournalToTable(storage->GetJournal()[0]);
+        REQUIRE(tables->TableCount() == storage->GetTableList()->TableCount());
+        REQUIRE(tables->TableCount() == 1);
+        REQUIRE(tables->GetTable(0) == "key1,value1");
+        REQUIRE(storage->GetJournal().size() == 0);
+    }
+    {
+        auto storage = CreateStorage(settings);
+        auto tables = storage->GetTableList();
+        storage->WriteToJournal({"key2value2"});
+        storage->PushJournalToTable(storage->GetJournal()[0]);
+        REQUIRE(tables->TableCount() == 2);
+        REQUIRE(tables->GetTable(1) == "key2value2");
+    }
+    std::remove("file.journal");
+    std::remove("file.tablelist");
+}
