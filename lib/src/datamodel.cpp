@@ -19,6 +19,7 @@ public:
             } else {
                 temp = "Update " + op.key + " " + op.value;
             }
+            temp += " " + std::to_string(op.key.size());
             output.push_back(temp);
             journal_.push_back(temp);
         }
@@ -27,22 +28,24 @@ public:
     }
 
     bool GetValue(std::string key, std::string& value) {
-        std::string s_type, s_key, s_value;
+        std::string s_type, s_key, s_value, key_length;
+        int key_length_int;
         for (auto it = journal_.rbegin(); it != journal_.rend(); it++) {
-            s_key = it->substr(it->find(' ') + 1,
-                               it->find_last_of(' ') - it->find(' ') - 1);
+            key_length = it->substr(it->find_last_of(' ') + 1);
+            key_length_int = std::stoi(key_length);
+            s_key = it->substr(it->find(' ') + 1, key_length_int);
             if (s_key == key) {
                 s_type = it->substr(0, it->find(' '));
                 if (s_type == "Update") {
-                    value = it->substr(it->find_last_of(' ') + 1);
+                    value = it->substr(it->find(' ') + key_length_int + 2,
+                                       it->find_last_of(' ') - it->find(' ') -
+                                           key_length_int - 2);
                     return true;
                 } else {
-                    value = "no_value";
                     return false;
                 }
             }
         }
-        value = "no_value";
         return false;
     }
 
