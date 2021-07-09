@@ -1,5 +1,7 @@
 #include "storage.h"
+
 #include <fstream>
+
 #include "catch2/catch.hpp"
 
 TEST_CASE("InMemoryStorage", "[write get]") {
@@ -46,7 +48,6 @@ TEST_CASE("Storage", "[journal]") {
         REQUIRE(storage->WriteToJournal({"key2,value2"}));
     }
     {
-        
         auto storage = CreateStorage(settings);
         auto journal = storage->GetJournal();
         REQUIRE(journal.size() == 2);
@@ -54,5 +55,22 @@ TEST_CASE("Storage", "[journal]") {
         REQUIRE(journal[1] == "key2,value2");
         REQUIRE(storage->WriteToJournal({"key,value"}));
     }
+    std::remove("file.journal");
+}
+
+TEST_CASE("Journal with zero", "[]") {
+    std::remove("file.journal");
+    DbSettings settings;
+    settings.filename = "file";
+    auto storage = CreateStorage(settings);
+
+    std::vector<char> journal_op_vec = {'k', 'e', 'y', '\0', 'v',
+                                        'a', 'l', 'u', 'e'};
+    std::string journal_op(journal_op_vec.begin(), journal_op_vec.end());
+
+    storage->WriteToJournal({journal_op});
+    auto journal = storage->GetJournal();
+    REQUIRE(journal[0] == journal_op);
+    REQUIRE(journal.size() == 1);
     std::remove("file.journal");
 }
