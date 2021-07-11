@@ -8,7 +8,7 @@ class Datamodel : public IDatamodel {
 public:
     Datamodel(IStoragePtr storage, DbSettings settings) {
         storage_ = storage;
-        journal_ = StringToOps(storage->GetJournal());
+        journal_ = JournalToOps(storage->GetJournal());
         journal_limit_ = settings.journal_limit;
     }
 
@@ -104,34 +104,38 @@ public:
         return table;
     }
 
-    Operations StringToOps(std::vector<std::string> s) {
-        Operations ops;
-        for (auto it = s.begin(); it < s.end(); it++) {
-            Op op;
-            int first_space = it->find(' ');
-            int last_space = it->find_last_of(' ');
-            int key_length = std::stoi(it->substr(last_space + 1));
-            std::string type, key, value;
-            type = it->substr(0, first_space);
-            key = it->substr(first_space + 1, key_length);
-            value = it->substr(first_space + key_length + 2,
-                               last_space - first_space - key_length - 2);
-            op.key = key;
-            op.value = value;
-            if (type == "Update") {
-                op.type = Op::Type::Update;
-            } else {
-                op.type = Op::Type::Remove;
-            }
-            ops.push_back(op);
-        }
-        return ops;
-    }
-
 private:
     IStoragePtr storage_;
     Operations journal_;
     int journal_limit_;
+
+    Operations JournalToOps(std::vector<std::string> s) {
+        Operations ops;
+        for (auto it = s.begin(); it < s.end(); it++) {
+            ops.push_back(StringToOp(*it));
+        }
+        return ops;
+    }
+
+    Op StringToOp(std::string s) {
+        Op op;
+        int first_space = s.find(' ');
+        int last_space = s.find_last_of(' ');
+        int key_length = std::stoi(s.substr(last_space + 1));
+        std::string type, key, value;
+        type = s.substr(0, first_space);
+        key = s.substr(first_space + 1, key_length);
+        value = s.substr(first_space + key_length + 2,
+                         last_space - first_space - key_length - 2);
+        op.key = key;
+        op.value = value;
+        if (type == "Update") {
+            op.type = Op::Type::Update;
+        } else {
+            op.type = Op::Type::Remove;
+        }
+        return op;
+    }
 };
 
 IDatamodelPtr CreateDatamodel(IStoragePtr storage, DbSettings settings) {

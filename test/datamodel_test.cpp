@@ -105,7 +105,8 @@ TEST_CASE("Datamodel(create table from journal + get value from table)",
     datamodel->Commit({});
     datamodel->GetValue("key 3", value);
 
-    REQUIRE(storage->GetTableList()->GetTable(1) ==  //первая таблица пустая
+    REQUIRE(storage->GetTableList()->GetTable(0) == "");
+    REQUIRE(storage->GetTableList()->GetTable(1) ==
             "5 key 15 value5 key 311 value 1 2 3");
     REQUIRE(value == "value 1 2 3");
 }
