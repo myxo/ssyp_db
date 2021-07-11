@@ -1,11 +1,17 @@
 #pragma once
+
 #include <memory>
 #include <string>
 
+#include "../src/datamodel.h"
 #include "settings.h"
 
-class ITransaction {};
-using ITransactionPtr = std::unique_ptr<ITransaction>;
+class ITransaction {
+public:
+    Operations ops;
+};
+
+using ITransactionPtr = std::shared_ptr<ITransaction>;
 
 enum class CommitStatus { Success, Error };
 
@@ -15,9 +21,17 @@ public:
 
     virtual void SetValue(std::string key, std::string value,
                           ITransactionPtr& tx) = 0;
-    virtual void Remove(std::string key) = 0;
+    virtual void SetValue(std::string key, int value, ITransactionPtr& tx) = 0;
+    virtual void SetValue(std::string key, double value,
+                          ITransactionPtr& tx) = 0;
+    virtual void SetValue(std::string key, bool value, ITransactionPtr& tx) = 0;
 
-    virtual bool GetValue(std::string key, str::string& value) = 0;
+    virtual void Remove(std::string key, ITransactionPtr& tx) = 0;
+
+    virtual bool GetValue(std::string key, std::string& value) = 0;
+    virtual bool GetValue(std::string key, int* value) = 0;
+    virtual bool GetValue(std::string key, double* value) = 0;
+    virtual bool GetValue(std::string key, bool* value) = 0;
 
     virtual CommitStatus Commit(ITransactionPtr tx) = 0;
 };

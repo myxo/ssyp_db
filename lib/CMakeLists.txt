@@ -12,7 +12,8 @@ PRIVATE
     src/datamodel.cpp
     src/storage.cpp
     src/in_memory_storage.cpp
- )
+    include/interface.cpp
+)
 
 target_link_libraries(sdb_lib
 PRIVATE

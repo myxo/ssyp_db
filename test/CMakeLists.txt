@@ -6,7 +6,8 @@ target_sources(lib_tests
 PRIVATE
     datamodel_test.cpp
     storage_test.cpp
- )
+    interface_test.cpp
+)
 
 target_link_libraries (lib_tests 
 PUBLIC 
