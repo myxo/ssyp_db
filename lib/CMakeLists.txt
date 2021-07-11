@@ -4,7 +4,7 @@ add_library(sdb_lib STATIC)
 
 target_sources(sdb_lib 
 PRIVATE
-    include/interface.h
+    include/ssyp_db.h
     include/settings.h
     src/datamodel.h
     src/storage.h
@@ -14,7 +14,8 @@ PRIVATE
     src/in_memory_storage.cpp
     src/logging.h
     src/logging.cpp
- )
+    src/ssyp_db.cpp
+)
 
 target_link_libraries(sdb_lib
 PRIVATE
