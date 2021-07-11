@@ -4,5 +4,5 @@
 struct DbSettings {
     bool in_memory = false;
     std::string filename;
-    int journal_limit;
+    size_t journal_limit = 100;
 };

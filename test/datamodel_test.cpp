@@ -84,7 +84,8 @@ TEST_CASE("Datamodel(set get w/ spaces and overlapping keys)", "[set get]") {
     REQUIRE(datamodel->GetValue("key space", value) == false);
 }
 
-TEST_CASE("Datamodel(create table from journal)", "[set get]") {
+TEST_CASE("Datamodel(create table from journal + get value from table)",
+          "[set get]") {
     DbSettings settings;
     settings.in_memory = true;
     settings.journal_limit = 4;
@@ -98,8 +99,13 @@ TEST_CASE("Datamodel(create table from journal)", "[set get]") {
     ops.push_back(Op{"key 2", "", Op::Type::Remove});
     ops.push_back(Op{"key 1", "value", Op::Type::Update});
 
-    datamodel->Commit(ops);
+    std::string value;
 
-    REQUIRE(storage->GetTableList()->GetTable(0) ==
-            "5 key 1 5 value 5 key 3 11 value 1 2 3");
+    datamodel->Commit(ops);
+    datamodel->Commit({});
+    datamodel->GetValue("key 3", value);
+
+    REQUIRE(storage->GetTableList()->GetTable(1) ==  //первая таблица пустая
+            "5 key 15 value5 key 311 value 1 2 3");
+    REQUIRE(value == "value 1 2 3");
 }
