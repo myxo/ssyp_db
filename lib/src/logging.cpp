@@ -7,13 +7,14 @@ static LogLevel globalLevel = LogLevel::Info;
 void SetLogLevel(LogLevel level) { globalLevel = level; }
 
 void Info(std::string input) {
-    if (globalLevel == LogLevel::Info) {
+    if (globalLevel == LogLevel::Info || globalLevel == LogLevel::Debug) {
         std::cout << input + '\n';
     }
 }
 
 void Error(std::string input) {
-    if (globalLevel == LogLevel::Error) {
+    if (globalLevel == LogLevel::Error || globalLevel == LogLevel::Info ||
+        globalLevel == LogLevel::Debug) {
         std::cout << input + '\n';
     }
 }
