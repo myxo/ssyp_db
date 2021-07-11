@@ -2,11 +2,7 @@
 
 #include <string>
 
-enum class LogLevel{
-    Error,
-    Info,
-    Debug
-};
+enum class LogLevel { Error, Info, Debug };
 
 void SetLogLevel(LogLevel level);
 
