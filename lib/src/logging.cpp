@@ -1,10 +1,10 @@
 #include "logging.h"
 
-#include <iostream>
-#include <vector>
-#include <thread>
-#include <mutex>
 #include <chrono>
+#include <iostream>
+#include <mutex>
+#include <thread>
+#include <vector>
 
 static LogLevel globalLevel = LogLevel::Info;
 static std::vector<std::string> logsQueue;
@@ -15,63 +15,62 @@ std::mutex mutex;
 
 void SetLogLevel(LogLevel level) { globalLevel = level; }
 
-void stopLogThread(){
-	stopThread = 1;
-}
+void stopLogThread() { stopThread = 1; }
 
-void logThreadCycle(){
-    while(!stopThread){
-	    if (!logsQueue.empty()) {
-	    	std::vector<std::string> localLogsQueue;
-	    	{
-			std::lock_guard<std::mutex> lock(mutex);
-	        	std::swap(localLogsQueue, logsQueue);
-	    	}
-
-	    	for(auto it = localLogsQueue.begin(); it != localLogsQueue.end(); it++){
-		   	 std::cout << *it + '\n';
-	    	}
+void logThreadCycle() {
+    while (!stopThread) {
+        if (!logsQueue.empty()) {
+            std::vector<std::string> localLogsQueue;
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                std::swap(localLogsQueue, logsQueue);
             }
-	    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+            for (auto it = localLogsQueue.begin(); it != localLogsQueue.end();
+                 it++) {
+                std::cout << *it + '\n';
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
 }
 
-void initializeLogThread(){
-    if (isLogThread){
+void initializeLogThread() {
+    if (isLogThread) {
         return;
     }
     logThread = std::thread(logThreadCycle);
     logThread.detach();
 }
-//TODO: deinitialize
+// TODO: deinitialize
 
 void Info(std::string input) {
-    if (!isLogThread){
+    if (!isLogThread) {
         initializeLogThread();
     }
     if (globalLevel == LogLevel::Info || globalLevel == LogLevel::Debug) {
-	std::lock_guard<std::mutex> lock(mutex);
-	logsQueue.push_back(input);
+        std::lock_guard<std::mutex> lock(mutex);
+        logsQueue.push_back(input);
     }
 }
 
 void Error(std::string input) {
-    if (!isLogThread){
+    if (!isLogThread) {
         initializeLogThread();
     }
     if (globalLevel == LogLevel::Error || globalLevel == LogLevel::Info ||
         globalLevel == LogLevel::Debug) {
-	std::lock_guard<std::mutex> lock(mutex);
-	logsQueue.push_back(input);
+        std::lock_guard<std::mutex> lock(mutex);
+        logsQueue.push_back(input);
     }
 }
 
 void Debug(std::string input) {
-    if (!isLogThread){
+    if (!isLogThread) {
         initializeLogThread();
     }
     if (globalLevel == LogLevel::Debug) {
-	std::lock_guard<std::mutex> lock(mutex);
-	logsQueue.push_back(input);
+        std::lock_guard<std::mutex> lock(mutex);
+        logsQueue.push_back(input);
     }
 }
