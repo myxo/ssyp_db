@@ -116,15 +116,21 @@ public:
             journal.push_back({});
             journal.back().resize(len);
             fread(journal.back().data(), sizeof(char), len, file);
-            if (std::hash<std::string>{}(journal.back()) % INT32_MAX == hash) {
-                if (is_journal_damaged) throw "The journal is damaged";
-            } else if (feof(file)) {
-                journal.pop_back();
-                break;
+            if (std::hash<std::string>{}(journal.back()) %
+                    std::numeric_limits<std::uint32_t>::max() ==
+                hash) {
+                if (is_journal_damaged) {
+                    throw "The journal is damaged";
+                    break;
+                }
+                if (feof(file)) {
+                    journal.pop_back();
+                    break;
+                }
             } else {
                 journal.pop_back();
                 is_journal_damaged = true;
-            } 
+            }
         }
         fclose(file);
         return journal;
