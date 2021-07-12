@@ -58,8 +58,11 @@ public:
                                      journal_filename_);
             return false;
         }
-        for (auto const& it : ops) {
-            int32_t tmp = (it.size());
+        for (auto const it : ops) {
+            uint32_t tmp = std::hash<std::string>{}(it) %
+                           std::numeric_limits<std::uint32_t>::max();
+            file.write((const char*)&tmp, sizeof(uint32_t));
+            tmp = (it.size());
             file.write((const char*)&tmp, sizeof(int32_t));
             file << it;
         }
@@ -103,16 +106,30 @@ public:
         if (!file) {
             return {};
         }
+        bool is_journal_damaged = false;
         while (!(feof(file))) {
+            uint32_t hash;
+            fread((void*)&hash, sizeof(uint32_t), 1, file);
             int32_t len;
             fread((void*)&len, sizeof(int32_t), 1, file);
             if (feof(file)) break;
             journal.push_back({});
             journal.back().resize(len);
             fread(journal.back().data(), sizeof(char), len, file);
-            if (feof(file)) {
+            if (std::hash<std::string>{}(journal.back()) %
+                    std::numeric_limits<std::uint32_t>::max() ==
+                hash) {
+                if (is_journal_damaged) {
+                    throw std::runtime_error("The journal is damaged");
+                    break;
+                }
+                if (feof(file)) {
+                    journal.pop_back();
+                    break;
+                }
+            } else {
                 journal.pop_back();
-                break;
+                is_journal_damaged = true;
             }
         }
         fclose(file);
