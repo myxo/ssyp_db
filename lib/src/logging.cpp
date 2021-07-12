@@ -4,6 +4,7 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <chrono>
 
 static LogLevel globalLevel = LogLevel::Info;
 static std::vector<std::string> logsQueue;
@@ -14,17 +15,24 @@ std::mutex mutex;
 
 void SetLogLevel(LogLevel level) { globalLevel = level; }
 
+void stopLogThread(){
+	stopThread = 1;
+}
+
 void logThreadCycle(){
     while(!stopThread){
-	    std::vector<std::string> localLogsQueue;
-	    {
-		std::lock_guard<std::mutex> lock(mutex);
-	        std::swap(localLogsQueue, logsQueue);
-	    }
+	    if (!logsQueue.empty()) {
+	    	std::vector<std::string> localLogsQueue;
+	    	{
+			std::lock_guard<std::mutex> lock(mutex);
+	        	std::swap(localLogsQueue, logsQueue);
+	    	}
 
-	    for(auto it = localLogsQueue.begin(); it != localLogsQueue.end(); it++){
-		    std::cout << *it + '\n';
-	    }
+	    	for(auto it = localLogsQueue.begin(); it != localLogsQueue.end(); it++){
+		   	 std::cout << *it + '\n';
+	    	}
+            }
+	    std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
 }
 

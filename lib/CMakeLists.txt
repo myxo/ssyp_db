@@ -17,6 +17,9 @@ PRIVATE
     src/ssyp_db.cpp
 )
 
+find_package(Threads REQUIRED)
+target_link_libraries(sdb_lib Threads::Threads)
+
 target_link_libraries(sdb_lib
 PRIVATE
 )
