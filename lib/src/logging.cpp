@@ -8,16 +8,16 @@
 
 static LogLevel globalLevel = LogLevel::Info;
 static std::vector<std::string> logsQueue;
-static bool isLogThread = 0;
-static bool stopThread = 0;
+static bool isLogThread = false;
+static bool stopThread = false;
 static std::thread logThread;
 std::mutex mutex;
 
 void SetLogLevel(LogLevel level) { globalLevel = level; }
 
-void stopLogThread() { stopThread = 1; }
+void StopLogThread() { stopThread = 1; }
 
-void logThreadCycle() {
+void LogThreadCycle() {
     while (!stopThread) {
         if (!logsQueue.empty()) {
             std::vector<std::string> localLogsQueue;
@@ -35,18 +35,18 @@ void logThreadCycle() {
     }
 }
 
-void initializeLogThread() {
+void InitializeLogThread() {
     if (isLogThread) {
         return;
     }
-    logThread = std::thread(logThreadCycle);
+    logThread = std::thread(LogThreadCycle);
     logThread.detach();
 }
 // TODO: deinitialize
 
 void Info(std::string input) {
     if (!isLogThread) {
-        initializeLogThread();
+        InitializeLogThread();
     }
     if (globalLevel == LogLevel::Info || globalLevel == LogLevel::Debug) {
         std::lock_guard<std::mutex> lock(mutex);
@@ -56,7 +56,7 @@ void Info(std::string input) {
 
 void Error(std::string input) {
     if (!isLogThread) {
-        initializeLogThread();
+        InitializeLogThread();
     }
     if (globalLevel == LogLevel::Error || globalLevel == LogLevel::Info ||
         globalLevel == LogLevel::Debug) {
@@ -67,7 +67,7 @@ void Error(std::string input) {
 
 void Debug(std::string input) {
     if (!isLogThread) {
-        initializeLogThread();
+        InitializeLogThread();
     }
     if (globalLevel == LogLevel::Debug) {
         std::lock_guard<std::mutex> lock(mutex);
