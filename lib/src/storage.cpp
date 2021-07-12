@@ -120,7 +120,7 @@ public:
                     std::numeric_limits<std::uint32_t>::max() ==
                 hash) {
                 if (is_journal_damaged) {
-                    throw "The journal is damaged";
+                    throw std::runtime_error("The journal is damaged");
                     break;
                 }
                 if (feof(file)) {
