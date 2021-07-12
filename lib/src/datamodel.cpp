@@ -61,6 +61,39 @@ public:
         return false;
     }
 
+private:
+    IStoragePtr storage_;
+    Operations journal_;
+    int journal_limit_;
+
+    Operations JournalToOps(std::vector<std::string> s) {
+        Operations ops;
+        for (auto it = s.begin(); it < s.end(); it++) {
+            ops.push_back(StringToOp(*it));
+        }
+        return ops;
+    }
+
+    Op StringToOp(std::string const& s) {
+        Op op;
+        int first_space = s.find(' ');
+        int last_space = s.find_last_of(' ');
+        int key_length = std::stoi(s.substr(last_space + 1));
+        std::string type, key, value;
+        type = s.substr(0, first_space);
+        key = s.substr(first_space + 1, key_length);
+        value = s.substr(first_space + key_length + 2,
+                         last_space - first_space - key_length - 2);
+        op.key = key;
+        op.value = value;
+        if (type == "Update") {
+            op.type = Op::Type::Update;
+        } else {
+            op.type = Op::Type::Remove;
+        }
+        return op;
+    }
+
     std::map<std::string, std::string> GenerateTable() {
         std::map<std::string, std::string> table;
         int key_length_int;
@@ -98,39 +131,6 @@ public:
             table[values[j]] = values[j + 1];
         }
         return table;
-    }
-
-private:
-    IStoragePtr storage_;
-    Operations journal_;
-    int journal_limit_;
-
-    Operations JournalToOps(std::vector<std::string> s) {
-        Operations ops;
-        for (auto it = s.begin(); it < s.end(); it++) {
-            ops.push_back(StringToOp(*it));
-        }
-        return ops;
-    }
-
-    Op StringToOp(std::string const& s) {
-        Op op;
-        int first_space = s.find(' ');
-        int last_space = s.find_last_of(' ');
-        int key_length = std::stoi(s.substr(last_space + 1));
-        std::string type, key, value;
-        type = s.substr(0, first_space);
-        key = s.substr(first_space + 1, key_length);
-        value = s.substr(first_space + key_length + 2,
-                         last_space - first_space - key_length - 2);
-        op.key = key;
-        op.value = value;
-        if (type == "Update") {
-            op.type = Op::Type::Update;
-        } else {
-            op.type = Op::Type::Remove;
-        }
-        return op;
     }
 };
 
