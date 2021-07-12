@@ -6,7 +6,6 @@
 TEST_CASE("Datamodel(set get)", "[set get]") {
     DbSettings settings;
     settings.in_memory = true;
-    settings.journal_limit = 10;
     auto storage = CreateStorage(settings);
     auto datamodel = CreateDatamodel(storage, settings);
 
@@ -24,7 +23,6 @@ TEST_CASE("Datamodel(set get)", "[set get]") {
 TEST_CASE("Datamodel(set + remove get)", "[set get]") {
     DbSettings settings;
     settings.in_memory = true;
-    settings.journal_limit = 10;
     auto storage = CreateStorage(settings);
     auto datamodel = CreateDatamodel(storage, settings);
 
@@ -43,7 +41,6 @@ TEST_CASE("Datamodel(set + remove get)", "[set get]") {
 TEST_CASE("Datamodel(set get w/ empty key)", "[set get]") {
     DbSettings settings;
     settings.in_memory = true;
-    settings.journal_limit = 10;
     auto storage = CreateStorage(settings);
     auto datamodel = CreateDatamodel(storage, settings);
 
@@ -55,7 +52,6 @@ TEST_CASE("Datamodel(set get w/ empty key)", "[set get]") {
 TEST_CASE("Datamodel(set get w/ spaces)", "[set get]") {
     DbSettings settings;
     settings.in_memory = true;
-    settings.journal_limit = 10;
     auto storage = CreateStorage(settings);
     auto datamodel = CreateDatamodel(storage, settings);
 
@@ -72,7 +68,6 @@ TEST_CASE("Datamodel(set get w/ spaces)", "[set get]") {
 TEST_CASE("Datamodel(set get w/ spaces and overlapping keys)", "[set get]") {
     DbSettings settings;
     settings.in_memory = true;
-    settings.journal_limit = 10;
     auto storage = CreateStorage(settings);
     auto datamodel = CreateDatamodel(storage, settings);
 

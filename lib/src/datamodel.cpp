@@ -8,16 +8,18 @@ class Datamodel : public IDatamodel {
 public:
     Datamodel(IStoragePtr storage, DbSettings settings) {
         storage_ = storage;
-        journal_ = JournalToOps(storage->GetJournal());
+        journal_ =
+            std::make_shared<Operations>(JournalToOps(storage->GetJournal()));
         journal_limit_ = settings.journal_limit;
+        journal_->reserve(journal_limit_);
     }
 
     bool Commit(Operations ops) {
         std::vector<std::string> output = {};
         std::string temp;
-        if (journal_.size() + ops.size() > journal_limit_) {
+        if (journal_->size() + ops.size() > journal_limit_) {
             storage_->PushJournalToTable(TableToString(GenerateTable()));
-            journal_.clear();
+            journal_ = std::make_shared<Operations>();
         }
         for (auto const& op : ops) {
             if (op.type == Op::Type::Remove) {
@@ -27,14 +29,15 @@ public:
             }
             temp += " " + std::to_string(op.key.size());
             output.push_back(temp);
-            journal_.push_back(op);
+            journal_->push_back(op);
         }
         storage_->WriteToJournal(output);
         return true;
     }
 
     bool GetValue(std::string key, std::string& value) {
-        for (auto it = journal_.rbegin(); it != journal_.rend(); it++) {
+        auto l_journal = journal_;
+        for (auto it = l_journal->rbegin(); it != l_journal->rend(); it++) {
             if (it->key == key) {
                 if (it->type == Op::Type::Update) {
                     value = it->value;
@@ -63,8 +66,8 @@ public:
 
 private:
     IStoragePtr storage_;
-    Operations journal_;
-    int journal_limit_;
+    std::shared_ptr<Operations> journal_;
+    size_t journal_limit_;
 
     Operations JournalToOps(std::vector<std::string> s) {
         Operations ops;
@@ -97,7 +100,7 @@ private:
     std::map<std::string, std::string> GenerateTable() {
         std::map<std::string, std::string> table;
         int key_length_int;
-        for (auto it = journal_.rbegin(); it != journal_.rend(); it++) {
+        for (auto it = journal_->rbegin(); it != journal_->rend(); it++) {
             if (table.find(it->key) == table.end()) {
                 table[it->key] = it->value;
             }
