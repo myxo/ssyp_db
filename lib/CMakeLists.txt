@@ -12,6 +12,8 @@ PRIVATE
     src/datamodel.cpp
     src/storage.cpp
     src/in_memory_storage.cpp
+    src/logging.h
+    src/logging.cpp
     src/ssyp_db.cpp
 )
 
