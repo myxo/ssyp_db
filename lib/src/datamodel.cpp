@@ -51,6 +51,9 @@ public:
             if (table.find(key) == table.end()) {
                 return false;
             } else {
+                if (table[key].size() == 0) {
+                    return false;
+                }
                 value = table[key];
                 return true;
             }
@@ -59,18 +62,11 @@ public:
     }
 
     std::map<std::string, std::string> GenerateTable() {
-        std::unordered_set<std::string> banned_keys;
         std::map<std::string, std::string> table;
         int key_length_int;
         for (auto it = journal_.rbegin(); it != journal_.rend(); it++) {
-            if ((table.find(it->key) == table.end()) &&
-                (std::find(banned_keys.begin(), banned_keys.end(), it->key) ==
-                 banned_keys.end())) {
-                if (it->type == Op::Type::Remove) {
-                    banned_keys.insert(it->key);
-                } else {
-                    table[it->key] = it->value;
-                }
+            if (table.find(it->key) == table.end()) {
+                table[it->key] = it->value;
             }
         }
         return table;
@@ -117,7 +113,7 @@ private:
         return ops;
     }
 
-    Op StringToOp(std::string s) {
+    Op StringToOp(std::string const& s) {
         Op op;
         int first_space = s.find(' ');
         int last_space = s.find_last_of(' ');

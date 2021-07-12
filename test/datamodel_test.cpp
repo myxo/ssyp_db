@@ -103,10 +103,30 @@ TEST_CASE("Datamodel(create table from journal + get value from table)",
 
     datamodel->Commit(ops);
     datamodel->Commit({});
-    datamodel->GetValue("key 3", value);
+    datamodel->GetValue("key 1", value);
 
     REQUIRE(storage->GetTableList()->GetTable(0) == "");
     REQUIRE(storage->GetTableList()->GetTable(1) ==
-            "5 key 15 value5 key 311 value 1 2 3");
-    REQUIRE(value == "value 1 2 3");
+            "5 key 15 value5 key 20 5 key 311 value 1 2 3");
+    REQUIRE(value == "value");
+}
+
+TEST_CASE("Datamodel(empty values in table)", "[set get]") {
+    DbSettings settings;
+    settings.in_memory = true;
+    settings.journal_limit = 1;
+    auto storage = CreateStorage(settings);
+    auto datamodel = CreateDatamodel(storage, settings);
+
+    Operations ops;
+    ops.push_back(Op{"key", "value", Op::Type::Update});
+    ops.push_back(Op{"key", "", Op::Type::Remove});
+
+    std::string value;
+
+    datamodel->Commit(ops);
+    datamodel->Commit({});
+
+    REQUIRE(storage->GetTableList()->GetTable(1) == "3 key0 ");
+    REQUIRE(datamodel->GetValue("key", value) == false);
 }
