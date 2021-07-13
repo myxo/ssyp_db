@@ -135,6 +135,10 @@ public:
         fclose(file);
         return journal;
     }
+    bool MergeTable(std::vector<size_t> merged_tables,
+                    std::string result_table) {
+        return false;
+    }
 
 private:
     std::shared_ptr<std::vector<std::string>> table_list_;

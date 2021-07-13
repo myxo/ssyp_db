@@ -34,6 +34,9 @@ public:
     // Возвращает журнал в виде бинарных данных (может быть полезно при
     // восстановлении базы)
     virtual JournalBlob GetJournal() = 0;
+
+    virtual bool MergeTable(std::vector<size_t> merged_tables,
+                            std::string result_table) = 0;
 };
 using IStoragePtr = std::shared_ptr<IStorage>;
 
