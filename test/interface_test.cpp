@@ -1,6 +1,7 @@
 #include "../include/ssyp_db.h"
 
 #include <string>
+#include <future>
 
 #include "catch2/catch.hpp"
 
@@ -14,7 +15,9 @@ TEST_CASE("ISsypDb", "set commit get remove") {
     Db->SetValue("key2", 2, transaction);
     Db->SetValue("key3", 3.5, transaction);
     Db->SetValue("key4", "value4", transaction);
-    Db->Commit(transaction);
+    std::future<CommitStatus> future = Db->Commit(transaction);
+    
+    REQUIRE(future.get() == CommitStatus::Success);
 
     bool v1;
     int v2;
@@ -33,6 +36,7 @@ TEST_CASE("ISsypDb", "set commit get remove") {
 
     transaction = Db->StartTransaction();
     Db->Remove("key1", transaction);
-    Db->Commit(transaction);
+    std::future<CommitStatus> future = Db->Commit(transaction);
+    REQUIRE(future.get() == CommitStatus::Success);
     REQUIRE(!(Db->GetValue("key1", v1)));
 }
