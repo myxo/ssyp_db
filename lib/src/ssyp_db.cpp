@@ -1,5 +1,10 @@
 #include "../include/ssyp_db.h"
 
+#include <mutex>
+#include <thread>
+#include <vector>
+#include <chrono>
+
 #include "datamodel.h"
 
 class Transaction : public ITransaction {
@@ -70,14 +75,50 @@ public:
             return false;
         }
     }
-    CommitStatus Commit(ITransactionPtr tx) override {
-        return datamodel_->Commit(((Transaction*)(tx.get()))->ops)
-                   ? CommitStatus::Success
-                   : CommitStatus::Error;
+    std::future<CommitStatus> Commit(ITransactionPtr tx) override {
+        std::promise<CommitStatus> promise;
+        std::future<CommitStatus> future = promise.get_future();
+        if (!isCommitThread) {
+            InitializeCommitThread();
+        }
+        std::lock_guard<std::mutex> lock(mutex);
+        transactionPtrQueue_.push_back(std::make_pair(tx, &promise));
+        return future;
     }
 
 private:
     IDatamodelPtr datamodel_;
+    std::vector<std::pair<ITransactionPtr ,std::promise<CommitStatus>*> > transactionPtrQueue_;
+    bool stopThread = false;
+    bool isCommitThread = false;
+    std::thread commitThread;
+    std::mutex mutex;
+
+    void InitializeCommitThread() {
+        if (isCommitThread) {
+            return;
+        }
+        commitThread = std::thread(&SsypDB::CommitThreadCycle, this);
+        commitThread.detach();
+    }
+    void CommitThreadCycle() {
+        while (!stopThread) {
+            if (!transactionPtrQueue_.empty()) {
+                std::vector<std::pair<ITransactionPtr, std::promise<CommitStatus>*> > localTransactionQueue;
+                {
+                    std::lock_guard<std::mutex> lock(mutex);
+                    std::swap(localTransactionQueue, transactionPtrQueue_);
+                }
+
+                for (auto it = localTransactionQueue.begin(); it != localTransactionQueue.end(); it++) {
+                    (it->second)->set_value(datamodel_->Commit(((Transaction*)((it->first).get()))->ops)
+                        ? CommitStatus::Success
+                        : CommitStatus::Error);
+                }
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        }
+    }
 };
 
 std::shared_ptr<ISsypDB> CreateDb(DbSettings settings) {
