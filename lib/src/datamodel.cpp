@@ -185,7 +185,7 @@ private:
                 StringToTable(storage_->GetTableList()->GetTable(it)));
         }
         Table out_table;
-        out_table.table_level = tables[0].table_level + 1;
+        out_table.table_level = tables[indexes.size() - 1].table_level + 1;
         for (auto it = tables.rbegin(); it < tables.rend(); it++) {
             std::map<std::string, std::string> data = it->table_data;
             for (auto const item : data) {
