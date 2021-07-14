@@ -118,7 +118,7 @@ private:
         return table;
     }
 
-    std::string TableToString(Table& table) const {
+    std::string TableToString(Table const& table) const {
         std::string s;
         for (auto it = table.table_data.begin(); it != table.table_data.end();
              it++) {
