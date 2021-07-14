@@ -86,7 +86,7 @@ private:
         return ops;
     }
 
-    Op StringToOp(std::string const& s) {
+    Op StringToOp(std::string const& s) const {
         Op op;
         int first_space = s.find(' ');
         int last_space = s.find_last_of(' ');
@@ -108,22 +108,20 @@ private:
 
     Table GenerateTable() {
         Table table;
-        std::map<std::string, std::string> table_;
         int key_length_int;
         for (auto it = journal_->rbegin(); it != journal_->rend(); it++) {
-            if (table_.find(it->key) == table_.end()) {
-                table_[it->key] = it->value;
+            if (table.table_data.find(it->key) == table.table_data.end()) {
+                table.table_data[it->key] = it->value;
             }
         }
-        table.table_data = table_;
         table.table_level = 1;
         return table;
     }
 
-    std::string TableToString(Table table) {
-        std::map<std::string, std::string> table_ = table.table_data;
+    std::string TableToString(Table& table) const {
         std::string s;
-        for (auto it = table_.begin(); it != table_.end(); it++) {
+        for (auto it = table.table_data.begin(); it != table.table_data.end();
+             it++) {
             s += std::to_string(it->first.size()) + " " + it->first +
                  std::to_string(it->second.size()) + " " + it->second;
         }
@@ -131,16 +129,16 @@ private:
         return s;
     }
 
-    Table StringToTable(std::string s) {
-        int length, i;
+    Table StringToTable(std::string s) const {
+        int length, i, last_space;
         Table table;
-        std::map<std::string, std::string> table_;
-        std::string value, s_level;
-        s_level = s.substr(s.find_last_of(' ') + 1);
+        std::string value;
+        std::string s_level = s.substr(s.find_last_of(' ') + 1);
         table.table_level = std::stoi(s_level);
         i = 0;
+        last_space = s.find_last_of(' ');
         std::vector<std::string> values;
-        while (i < s.find_last_of(' ')) {
+        while (i < last_space) {
             int space_pos = s.find(' ', i);
             length = std::stoi(s.substr(i, space_pos));
             value = s.substr(space_pos + 1, length);
@@ -148,50 +146,56 @@ private:
             i = space_pos + 1 + length;
         }
         for (int j = 0; j < values.size(); j += 2) {
-            table_[values[j]] = values[j + 1];
+            table.table_data[values[j]] = values[j + 1];
         }
-        table.table_data = table_;
         return table;
     }
 
     void MergeTablesCheck() {
-        std::map<int, std::vector<Table>> tables_for_level;
+        std::map<int, std::vector<int>> indexes_for_level;
         std::vector<size_t> indexes_for_merge;
+        int max_merge_level = 1;
         for (int i = 0; i < storage_->GetTableList()->TableCount(); i++) {
-            Table table_ = StringToTable(storage_->GetTableList()->GetTable(i));
-            tables_for_level[table_.table_level].push_back(table_);
+            int table_level =
+                std::stoi(storage_->GetTableList()->GetTable(i).substr(
+                    storage_->GetTableList()->GetTable(i).find_last_of(' ') +
+                    1));
+            indexes_for_level[table_level].push_back(i);
         }
-        for (int i = 1; i < table_limit_; i++) {
-            if (tables_for_level[i].size() > table_limit_) {
-                indexes_for_merge.clear();
-                Table merged_table = MergeTables(tables_for_level[i]);
-                for (int j = 0; j < storage_->GetTableList()->TableCount();
-                     j++) {
-                    if (StringToTable(storage_->GetTableList()->GetTable(j))
-                            .table_level == i) {
-                        indexes_for_merge.push_back(j);
-                    }
-                }
-                storage_->MergeTable(indexes_for_merge,
-                                     TableToString(merged_table));
-                tables_for_level[i + 1].push_back(merged_table);
+        for (int i = 2; i < table_limit_; i++) {
+            if (indexes_for_level[i].size() == table_limit_) {
+                max_merge_level = i;
+            } else {
+                break;
             }
         }
+        for (int i = 1; i <= max_merge_level; i++) {
+            for (auto const it : indexes_for_level[i]) {
+                indexes_for_merge.push_back(it);
+            }
+        }
+        Table merged_table = MergeTables(indexes_for_merge);
+        storage_->MergeTable(indexes_for_merge, TableToString(merged_table));
     }
 
-    Table MergeTables(std::vector<Table> tables) {
-        Table table;
-        table.table_level = tables[0].table_level + 1;
+    Table MergeTables(std::vector<size_t>& indexes) {
+        std::vector<Table> tables;
+        for (auto const it : indexes) {
+            tables.push_back(
+                StringToTable(storage_->GetTableList()->GetTable(it)));
+        }
+        Table out_table;
+        out_table.table_level = tables[0].table_level + 1;
         for (auto it = tables.rbegin(); it < tables.rend(); it++) {
             std::map<std::string, std::string> data = it->table_data;
             for (auto const item : data) {
-                if (table.table_data.find(item.first) ==
-                    table.table_data.end()) {
-                    table.table_data[item.first] = item.second;
+                if (out_table.table_data.find(item.first) ==
+                    out_table.table_data.end()) {
+                    out_table.table_data[item.first] = item.second;
                 }
             }
         }
-        return table;
+        return out_table;
     }
 };
 
