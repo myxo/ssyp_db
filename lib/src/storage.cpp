@@ -1,27 +1,24 @@
 #include "storage.h"
 
+#include <algorithm>
 #include <cassert>
 #include <fstream>
+#include <set>
 
 #include "in_memory_storage.h"
 
 class TableList : public ITableList {
 public:
-    TableList(std::shared_ptr<std::string> filename, size_t* size)
-        : filename_(filename), size_(size) {}
-    size_t TableCount() const override { return *size_; }
+    TableList(std::shared_ptr<std::string> filename,
+              std::vector<int32_t> table_addresses)
+        : filename_(filename), table_addresses_(table_addresses) {}
+    size_t TableCount() const override { return table_addresses_.size(); }
     std::string GetTable(size_t index) const override {
-        assert(index % *size_ == index);
         std::fstream file(*filename_);
-        if (index > 0) {
-            file.seekg(-sizeof(int32_t), std::ios_base::end);
-            for (int i = *size_; i != index; i--) {
-                int32_t previous_element;
-                file.read((char*)&previous_element, sizeof(int32_t));
-                file.seekg(previous_element);
-            }
-            file.seekg(sizeof(int), std::ios_base::cur);
-        }
+        file.seekg(table_addresses_.at(index) + sizeof(int32_t), std::ios::beg);
+        int32_t merged_table_arr_len;
+        file.read((char*)&merged_table_arr_len, sizeof(int32_t));
+        file.seekg(merged_table_arr_len * sizeof(int32_t), std::ios::cur);
         std::string table;
         int32_t len;
         file.read((char*)&len, sizeof(int32_t));
@@ -33,22 +30,41 @@ public:
 
 private:
     std::shared_ptr<std::string> filename_;
-    size_t* size_;
+    std::vector<int32_t> table_addresses_;
 };
 
 class Storage : public IStorage {
 public:
     Storage(std::string filename)
         : journal_filename_(filename + ".journal"),
-          tablelist_filename_(filename + ".tablelist") {
-        size_of_tablelist_ = 0;
-        std::ifstream tables_file(tablelist_filename_);
+          tablelist_filename_(
+              std::make_shared<std::string>(filename + ".tablelist")) {
+        table_addresses_ = {};
+        std::ifstream tables_file(*tablelist_filename_);
         if (!tables_file) {
             tables_file.close();
             return;
         }
-        tables_file.seekg(-2 * sizeof(int32_t), std::ios::end);
-        tables_file.read((char*)&size_of_tablelist_, sizeof(int32_t));
+        int32_t previous_table;
+        std::set<int32_t> merged_tables;
+        tables_file.seekg(-1 * sizeof(int32_t), std::ios::end);
+        tables_file.read((char*)&previous_table, sizeof(int32_t));
+        while (previous_table > 0) {
+            if (merged_tables.count(previous_table) == 0)
+                table_addresses_.push_back(previous_table);
+            tables_file.seekg(previous_table, std::ios::beg);
+            tables_file.read((char*)&previous_table, sizeof(int32_t));
+            int32_t len;
+            tables_file.read((char*)&len, sizeof(int32_t));
+            for (int i = 0; i < len; i++) {
+                int32_t merged_table;
+                tables_file.read((char*)&merged_table, sizeof(int32_t));
+                merged_tables.insert(merged_table);
+            }
+        }
+        if (merged_tables.count(-sizeof(int32_t)) == 0)
+            table_addresses_.push_back(-sizeof(int32_t));
+        std::reverse(std::begin(table_addresses_), std::end(table_addresses_));
         tables_file.close();
     }
     bool WriteToJournal(std::vector<std::string> ops) override {
@@ -72,33 +88,33 @@ public:
     bool PushJournalToTable(std::string blob) override {
         int32_t last_element;
         {
-            std::ifstream file(tablelist_filename_);
+            std::ifstream file(*tablelist_filename_);
             file.seekg(-sizeof(int32_t), std::ios::end);
-            last_element = size_of_tablelist_ == 0 ? -sizeof(int32_t)
-                                                   : (int32_t)file.tellg();
+            last_element = table_addresses_.size() == 0 ? -sizeof(int32_t)
+                                                        : (int32_t)file.tellg();
             file.close();
         }
-        std::ofstream file(tablelist_filename_,
+        std::ofstream file(*tablelist_filename_,
                            std::ios::app | std::ios::binary);
         if (!file) {
             throw std::runtime_error("Cannot open tablelist file: " +
-                                     tablelist_filename_);
+                                     *tablelist_filename_);
             return false;
         }
         int32_t len = blob.size();
+        int32_t merged_tables_len = 0;
+        file.write((const char*)&merged_tables_len, sizeof(int32_t));
         file.write((const char*)&len, sizeof(int32_t));
         file << blob;
-        size_of_tablelist_++;
-        file.write((const char*)&size_of_tablelist_, sizeof(int32_t));
+        table_addresses_.push_back(last_element);
         file.write((const char*)&last_element, sizeof(int32_t));
         file.close();
         std::remove(journal_filename_.c_str());
         return true;
     }
     ITableListPtr GetTableList() override {
-        return std::make_shared<TableList>(
-            std::make_shared<std::string>(tablelist_filename_),
-            &size_of_tablelist_);
+        return std::make_shared<TableList>(tablelist_filename_,
+                                           table_addresses_);
     }
     JournalBlob GetJournal() override {
         FILE* file = fopen(journal_filename_.c_str(), "rb");
@@ -137,14 +153,45 @@ public:
     }
     bool MergeTable(std::vector<size_t> merged_tables,
                     std::string result_table) {
+        std::sort(merged_tables.begin(), merged_tables.end(),
+                  std::greater<size_t>());
+        int32_t last_element;
+        {
+            std::ifstream file(*tablelist_filename_);
+            file.seekg(-sizeof(int32_t), std::ios::end);
+            last_element = table_addresses_.size() == 0 ? -sizeof(int32_t)
+                                                        : (int32_t)file.tellg();
+            file.close();
+        }
+        std::ofstream file(*tablelist_filename_,
+                           std::ios::app | std::ios::binary);
+        if (!file) {
+            throw std::runtime_error("Cannot open tablelist file: " +
+                                     *tablelist_filename_);
+            return false;
+        }
+        int32_t len = result_table.size();
+        int32_t merged_tables_len = merged_tables.size();
+        file.write((const char*)&merged_tables_len, sizeof(int32_t));
+        for (int32_t it : merged_tables) {
+            file.write((const char*)&(table_addresses_.at(it)),
+                       sizeof(int32_t));
+            table_addresses_.erase(table_addresses_.begin() + it);
+        }
+        file.write((const char*)&len, sizeof(int32_t));
+        file << result_table;
+        table_addresses_.push_back(last_element);
+        file.write((const char*)&last_element, sizeof(int32_t));
+        file.close();
+        std::remove(journal_filename_.c_str());
         return false;
     }
 
 private:
     std::shared_ptr<std::vector<std::string>> table_list_;
     std::string journal_filename_;
-    std::string tablelist_filename_;
-    size_t size_of_tablelist_;
+    std::shared_ptr<std::string> tablelist_filename_;
+    std::vector<int32_t> table_addresses_;
 };
 
 IStoragePtr CreateStorage(DbSettings settings) {

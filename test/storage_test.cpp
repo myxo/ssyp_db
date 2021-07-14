@@ -17,7 +17,7 @@ TEST_CASE("InMemoryTableList", "[push count get merge]") {
     DbSettings settings;
     settings.in_memory = true;
     auto storage = CreateStorage(settings);
-    
+
     storage->WriteToJournal({"key1,value1"});
     storage->PushJournalToTable(storage->GetJournal()[0]);
     auto tables = storage->GetTableList();
@@ -87,28 +87,46 @@ TEST_CASE("Journal with zero", "[]") {
     std::remove("file.journal");
 }
 
-TEST_CASE("InFileTableList", "[push count get]") {
+TEST_CASE("InFileTableList", "[push count get merge]") {
     std::remove("file.journal");
     std::remove("file.tablelist");
     DbSettings settings;
     settings.filename = "file";
     {
         auto storage = CreateStorage(settings);
-        auto tables = storage->GetTableList();
         storage->WriteToJournal({"key1,value1"});
         storage->PushJournalToTable(storage->GetJournal()[0]);
-        REQUIRE(tables->TableCount() == storage->GetTableList()->TableCount());
+        auto tables = storage->GetTableList();
         REQUIRE(tables->TableCount() == 1);
         REQUIRE(tables->GetTable(0) == "key1,value1");
         REQUIRE(storage->GetJournal().size() == 0);
     }
     {
         auto storage = CreateStorage(settings);
-        auto tables = storage->GetTableList();
         storage->WriteToJournal({"key2value2"});
         storage->PushJournalToTable(storage->GetJournal()[0]);
+        auto tables = storage->GetTableList();
         REQUIRE(tables->TableCount() == 2);
         REQUIRE(tables->GetTable(1) == "key2value2");
+    }
+    {
+        auto storage = CreateStorage(settings);
+        auto tables = storage->GetTableList();
+        storage->MergeTable({0, 1},
+                            tables->GetTable(0) + ";" + tables->GetTable(1));
+        REQUIRE(tables->TableCount() == 2);
+        REQUIRE(tables->GetTable(0) == "key1,value1");
+        REQUIRE(tables->GetTable(1) == "key2value2");
+
+        auto new_tables = storage->GetTableList();
+        REQUIRE(new_tables->TableCount() == 1);
+        REQUIRE(new_tables->GetTable(0) == "key1,value1;key2value2");
+    }
+    {
+        auto storage = CreateStorage(settings);
+        auto tables = storage->GetTableList();
+        REQUIRE(tables->TableCount() == 1);
+        REQUIRE(tables->GetTable(0) == "key1,value1;key2value2");
     }
     std::remove("file.journal");
     std::remove("file.tablelist");
