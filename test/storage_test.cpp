@@ -1,5 +1,7 @@
 #include "storage.h"
 
+#include <iostream>
+#include <thread>
 #include <fstream>
 
 #include "catch2/catch.hpp"
@@ -112,4 +114,38 @@ TEST_CASE("InFileTableList", "[push count get]") {
     }
     std::remove("file.journal");
     std::remove("file.tablelist");
+}
+
+TEST_CASE("InMemoryStorage multithreaded", "[]") {
+    DbSettings settings;
+    settings.in_memory = true;
+    auto storage = CreateStorage(settings);
+    bool stop = false;
+
+
+    std::thread t{[&] {
+        while (!stop) {
+            auto tables = storage->GetTableList();
+            std::cout << "\t" << tables->TableCount() << "\n";
+            for (int i = tables->TableCount() - 1; i >= 0; i--) {
+                std::string t = tables->GetTable(i);
+                std::cout << t << "\n";
+                // and here Datamodel try to read value
+            }
+            std::cout << "\n";
+        }
+    }};
+    for (int i = 0; i < 120; i++) {
+        storage->WriteToJournal({"key1,value1"});
+        storage->PushJournalToTable(storage->GetJournal()[0]);
+
+        storage->WriteToJournal({"key2,value2"});
+        storage->PushJournalToTable(storage->GetJournal()[0]);
+
+        auto tables = storage->GetTableList();
+        storage->MergeTable({0, 1},
+                            tables->GetTable(0) + ";" + tables->GetTable(1));
+    }
+    stop = true;
+    t.join();
 }

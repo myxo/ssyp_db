@@ -1,5 +1,6 @@
 #include "in_memory_storage.h"
-
+#include <chrono>
+#include <thread>
 #include <algorithm>
 
 InMemoryTableList::InMemoryTableList(
@@ -19,22 +20,27 @@ bool InMemoryStorage::WriteToJournal(std::vector<std::string> ops) {
     return true;
 }
 bool InMemoryStorage::PushJournalToTable(std::string blob) {
+    writing = true;
     table_list_.push_back(std::make_shared<std::string>(blob));
     journal_.clear();
+    writing = false;
     return true;
 }
 ITableListPtr InMemoryStorage::GetTableList() {
+    while (writing) std::this_thread::sleep_for(std::chrono::milliseconds(5));
     return std::make_shared<InMemoryTableList>(table_list_);
 }
 JournalBlob InMemoryStorage::GetJournal() { return journal_; }
 
 bool InMemoryStorage::MergeTable(std::vector<size_t> merged_tables,
                                  std::string result_table) {
+    writing = true;
     std::sort(merged_tables.begin(), merged_tables.end(),
               std::greater<size_t>());
     for (auto const it : merged_tables) {
         table_list_.erase(table_list_.begin() + it);
     }
     table_list_.push_back(std::make_shared<std::string>(result_table));
+    writing = false;
     return true;
 }

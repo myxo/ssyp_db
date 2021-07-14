@@ -23,4 +23,5 @@ public:
 private:
     std::vector<std::string> journal_;
     std::vector<std::shared_ptr<std::string>> table_list_;
+    std::atomic<bool> writing = false;
 };
