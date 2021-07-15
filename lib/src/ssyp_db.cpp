@@ -15,7 +15,12 @@ public:
 class SsypDB : public ISsypDB {
 public:
     SsypDB(DbSettings settings)
-        : datamodel_(CreateDatamodel(CreateStorage(settings), settings)) {}
+        : datamodel_(CreateDatamodel(CreateStorage(settings), settings)) {
+        commit_thread_ = std::thread(&SsypDB::CommitThreadCycle, this);
+    }
+    ~SsypDB() {
+        commit_thread_.join();
+    }
     ITransactionPtr StartTransaction() override {
         return std::make_shared<Transaction>();
     }
@@ -78,51 +83,43 @@ public:
     std::future<CommitStatus> Commit(ITransactionPtr tx) override {
         std::promise<CommitStatus> promise;
         std::future<CommitStatus> future = promise.get_future();
-        if (!isCommitThread) {
-            InitializeCommitThread();
-        }
-        std::lock_guard<std::mutex> lock(mutex);
-        transactionPtrQueue_.push_back(std::make_pair(tx, std::move(promise)));
+        std::lock_guard lock(mutex_);
+        transaction_ptr_queue_.push_back(std::make_pair(tx, std::move(promise)));
+	thread_notified = true;
+	queue_check_.notify_one();
         return future;
     }
 
 private:
     IDatamodelPtr datamodel_;
     std::vector<std::pair<ITransactionPtr, std::promise<CommitStatus>>>
-        transactionPtrQueue_;
-    bool stopThread = false;
-    bool isCommitThread = false;
-    std::thread commitThread;
-    std::mutex mutex;
+        transaction_ptr_queue_;
+    std::atomic_bool<bool> stop_thread_ = false;
+    std::thread commit_thread_;
+    std::mutex mutex_;
+    atomic_bool<bool> thread_notified = false;
+    std::condition_variable queue_check_;
 
-    void InitializeCommitThread() {
-        if (isCommitThread) {
-            return;
-        }
-        commitThread = std::thread(&SsypDB::CommitThreadCycle, this);
-        commitThread.detach();
-    }
     void CommitThreadCycle() {
-        while (!stopThread) {
-            if (!transactionPtrQueue_.empty()) {
-                std::vector<
-                    std::pair<ITransactionPtr, std::promise<CommitStatus>>>
-                    localTransactionQueue;
+        while (!stop_thread_) {
+	    std::unique_lock<std::mutex> locker(g_lockqueue);
+            while(!thread_notified)
+	        queue_check_.wait(locker);
+
+            if (!transaction_ptr_queue_.empty()) {
+                decltype(transaction_ptr_queue_) local_transaction_queue;
                 {
-                    std::lock_guard<std::mutex> lock(mutex);
-                    std::swap(localTransactionQueue, transactionPtrQueue_);
+                    std::lock_guard lock(mutex_);
+                    std::swap(local_transaction_queue, transaction_ptr_queue_);
                 }
 
-                for (auto it = localTransactionQueue.begin();
-                     it != localTransactionQueue.end(); it++) {
-                    (it->second)
-                        .set_value(datamodel_->Commit(
-                                       ((Transaction*)((it->first).get()))->ops)
+                for (auto& [tx, promise] : local_transaction_queue) {
+		    auto status = datamodel_->Commit((Transaction*)(tx.get()->ops)
                                        ? CommitStatus::Success
-                                       : CommitStatus::Error);
+                                       : CommitStatus::Error)
+                    promise.set_value(status);
                 }
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
     }
 };
