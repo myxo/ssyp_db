@@ -6,13 +6,13 @@
 
 InMemoryTableList::InMemoryTableList(
     std::vector<std::shared_ptr<std::string>> tables,
-    std::shared_ptr<int> read_table_count)
+    std::atomic_int& read_table_count)
     : tables_(tables), read_table_count_(read_table_count) {}
 
 size_t InMemoryTableList::TableCount() const { return tables_.size(); }
 
 std::string InMemoryTableList::GetTable(size_t index) const {
-    (*read_table_count_)++;
+    read_table_count_++;
     return *(tables_.at(index));
 }
 
@@ -47,12 +47,4 @@ bool InMemoryStorage::MergeTable(std::vector<size_t> merged_tables,
     table_list_.push_back(std::make_shared<std::string>(result_table));
     merge_table_count_++;
     return true;
-}
-
-InMemoryStorage::~InMemoryStorage() {
-    Debug("journal writings: " + std::to_string(write_journal_count_));
-    Debug("\njournal readings: " + std::to_string(read_journal_count_));
-    Debug("\ntable pushings: " + std::to_string(push_table_count_));
-    Debug("\ntable mergings: " + std::to_string(merge_table_count_));
-    Debug("\ntable readings: " + std::to_string(*read_table_count_));
 }

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <format>
 #include <fstream>
 #include <set>
 
@@ -11,7 +12,7 @@
 class TableList : public ITableList {
 public:
     TableList(std::string filename, std::vector<int64_t> table_addresses,
-              std::shared_ptr<int> read_table_count)
+              std::atomic_int& read_table_count)
         : filename_(filename),
           table_addresses_(table_addresses),
           read_table_count_(read_table_count) {}
@@ -28,14 +29,14 @@ public:
         table.resize(len);
         file.read(table.data(), len);
         file.close();
-        (*read_table_count_)++;
+        read_table_count_++;
         return table;
     }
 
 private:
     std::string filename_;
     std::vector<int64_t> table_addresses_;
-    std::shared_ptr<int> read_table_count_;
+    std::atomic_int& read_table_count_;
 };
 
 class Storage : public IStorage {
@@ -192,25 +193,23 @@ public:
         merge_table_count_++;
         return false;
     }
-    ~Storage() {
-        Debug("journal writings: " + std::to_string(write_journal_count_));
-        Debug("\njournal readings: " + std::to_string(read_journal_count_));
-        Debug("\ntable pushings: " + std::to_string(push_table_count_));
-        Debug("\ntable mergings: " + std::to_string(merge_table_count_));
-        Debug("\ntable readings: " + std::to_string(*read_table_count_));
-    }
 
 private:
     std::string journal_filename_;
     std::string tablelist_filename_;
     std::vector<int64_t> table_addresses_;
-
-    int write_journal_count_ = 0;
-    int read_journal_count_ = 0;
-    int push_table_count_ = 0;
-    int merge_table_count_ = 0;
-    std::shared_ptr<int> read_table_count_ = std::make_shared<int>(0);
 };
+
+IStorage::~IStorage() {
+    Debug("\tStorage statistic");
+    Debug(std::format("{} {:10d}", "Journal writing:\t", write_journal_count_));
+    Debug(std::format("{} {:10d}", "journal readings:\t", read_journal_count_));
+    Debug(std::format("{} {:10d}", "table pushings:\t\t", push_table_count_));
+    Debug(std::format("{} {:10d}", "table mergings:\t\t", merge_table_count_));
+    Debug(std::format("{} {:10d}", "table readings:\t\t",
+                      (int)read_table_count_));
+    Debug("\n");
+}
 
 IStoragePtr CreateStorage(DbSettings settings) {
     if (settings.in_memory) {
