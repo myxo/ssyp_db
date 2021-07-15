@@ -1,11 +1,11 @@
 #include "../include/ssyp_db.h"
 
+#include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <mutex>
 #include <thread>
 #include <vector>
-#include <atomic>
-#include <condition_variable>
 
 #include "datamodel.h"
 
@@ -19,9 +19,9 @@ public:
     SsypDB(DbSettings settings)
         : datamodel_(CreateDatamodel(CreateStorage(settings), settings)) {
         commit_thread_ = std::thread(&SsypDB::CommitThreadCycle, this);
-        //commit_thread_.detach();
+        // commit_thread_.detach();
     }
-    ~SsypDB() { 
+    ~SsypDB() {
         stop_thread_ = true;
         thread_notified = true;
         queue_check_.notify_one();
@@ -90,9 +90,10 @@ public:
         std::promise<CommitStatus> promise;
         std::future<CommitStatus> future = promise.get_future();
         std::lock_guard lock(mutex_);
-        transaction_ptr_queue_.push_back(std::make_pair(tx, std::move(promise)));
-	    thread_notified = true;
-	    queue_check_.notify_one();
+        transaction_ptr_queue_.push_back(
+            std::make_pair(tx, std::move(promise)));
+        thread_notified = true;
+        queue_check_.notify_one();
         return future;
     }
 
@@ -109,9 +110,8 @@ private:
 
     void CommitThreadCycle() {
         while (!stop_thread_.load()) {
-	        std::unique_lock<std::mutex> locker(mutex_);
-            while(!thread_notified.load())
-	            queue_check_.wait(locker);
+            std::unique_lock<std::mutex> locker(mutex_);
+            while (!thread_notified.load()) queue_check_.wait(locker);
 
             if (!transaction_ptr_queue_.empty()) {
                 decltype(transaction_ptr_queue_) local_transaction_queue;
