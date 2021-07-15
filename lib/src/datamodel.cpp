@@ -192,12 +192,7 @@ private:
         Table out_table;
         out_table.table_level = merge_level;
         for (auto it = tables.rbegin(); it < tables.rend(); it++) {
-            for (auto const item : it->table_data) {
-                if (out_table.table_data.find(item.first) ==
-                    out_table.table_data.end()) {
-                    out_table.table_data[item.first] = item.second;
-                }
-            }
+            out_table.table_data.merge(it->table_data);
         }
         return out_table;
     }
