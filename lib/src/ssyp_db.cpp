@@ -82,13 +82,13 @@ public:
             InitializeCommitThread();
         }
         std::lock_guard<std::mutex> lock(mutex);
-        transactionPtrQueue_.push_back(std::make_pair(tx, &promise));
+        transactionPtrQueue_.push_back(std::make_pair(tx, std::move(promise)));
         return future;
     }
 
 private:
     IDatamodelPtr datamodel_;
-    std::vector<std::pair<ITransactionPtr ,std::promise<CommitStatus>*> > transactionPtrQueue_;
+    std::vector<std::pair<ITransactionPtr ,std::promise<CommitStatus>> > transactionPtrQueue_;
     bool stopThread = false;
     bool isCommitThread = false;
     std::thread commitThread;
@@ -104,14 +104,14 @@ private:
     void CommitThreadCycle() {
         while (!stopThread) {
             if (!transactionPtrQueue_.empty()) {
-                std::vector<std::pair<ITransactionPtr, std::promise<CommitStatus>*> > localTransactionQueue;
+                std::vector<std::pair<ITransactionPtr, std::promise<CommitStatus>> > localTransactionQueue;
                 {
                     std::lock_guard<std::mutex> lock(mutex);
                     std::swap(localTransactionQueue, transactionPtrQueue_);
                 }
 
                 for (auto it = localTransactionQueue.begin(); it != localTransactionQueue.end(); it++) {
-                    (it->second)->set_value(datamodel_->Commit(((Transaction*)((it->first).get()))->ops)
+                    (it->second).set_value(datamodel_->Commit(((Transaction*)((it->first).get()))->ops)
                         ? CommitStatus::Success
                         : CommitStatus::Error);
                 }
