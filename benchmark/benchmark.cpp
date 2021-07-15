@@ -1,8 +1,6 @@
+#include "ssyp_db.h"
+#include <chrono>
 #include <iostream>
-#include <stdlib.h>
-#include <time.h>
-#include "../include/ssyp_db.h"
-#include "catch2/catch.hpp"
 
 int main() {
     std::cout << "This is a benchmark template!\n";
@@ -10,22 +8,23 @@ int main() {
     
     DbSettings settings;
     settings.in_memory = true;
-    auto Db = CreateDb(settings);
+    auto db = CreateDb(settings);
 
-    auto transaction = Db->StartTransaction();
-    Db->SetValue("key1", true, transaction);
-    Db->SetValue("key2", 2, transaction);
-    Db->SetValue("key3", 3.5, transaction);
-    Db->SetValue("key4", "value4", transaction);
+    auto transaction = db->StartTransaction();
+    db->SetValue("key1", true, transaction);
+    db->SetValue("key2", 2, transaction);
+    db->SetValue("key3", 3.5, transaction);
+    db->SetValue("key4", "value4", transaction);
 
-    start = clock();
+    std::chrono::high_resolution_clock::time_point start =
+        std::chrono::high_resolution_clock::now();
     for (int i = 0; i <= 1000; i++)
     {
-        Db->Commit(transaction);
+        db->Commit(transaction);
     }
-    end = clock();
-
-    printf("1000 commits for %.4f second(s)\n", ((double) end - start) / ((double) CLOCKS_PER_SEC));
-
+    std::chrono::high_resolution_clock::time_point end =
+        std::chrono::high_resolution_clock::now();
+    double diff = end - start;
+    std::cout << "commits for " << diff << "seconds. " << 1000 / diff << " commits for 1 second.";
     return 0;
-}
+}   
