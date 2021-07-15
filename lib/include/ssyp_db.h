@@ -1,8 +1,8 @@
 #pragma once
 
+#include <future>
 #include <memory>
 #include <string>
-#include <future>
 
 #include "settings.h"
 

@@ -1,9 +1,9 @@
 #include "../include/ssyp_db.h"
 
+#include <chrono>
 #include <mutex>
 #include <thread>
 #include <vector>
-#include <chrono>
 
 #include "datamodel.h"
 
@@ -88,7 +88,8 @@ public:
 
 private:
     IDatamodelPtr datamodel_;
-    std::vector<std::pair<ITransactionPtr ,std::promise<CommitStatus>> > transactionPtrQueue_;
+    std::vector<std::pair<ITransactionPtr, std::promise<CommitStatus>>>
+        transactionPtrQueue_;
     bool stopThread = false;
     bool isCommitThread = false;
     std::thread commitThread;
@@ -104,16 +105,21 @@ private:
     void CommitThreadCycle() {
         while (!stopThread) {
             if (!transactionPtrQueue_.empty()) {
-                std::vector<std::pair<ITransactionPtr, std::promise<CommitStatus>> > localTransactionQueue;
+                std::vector<
+                    std::pair<ITransactionPtr, std::promise<CommitStatus>>>
+                    localTransactionQueue;
                 {
                     std::lock_guard<std::mutex> lock(mutex);
                     std::swap(localTransactionQueue, transactionPtrQueue_);
                 }
 
-                for (auto it = localTransactionQueue.begin(); it != localTransactionQueue.end(); it++) {
-                    (it->second).set_value(datamodel_->Commit(((Transaction*)((it->first).get()))->ops)
-                        ? CommitStatus::Success
-                        : CommitStatus::Error);
+                for (auto it = localTransactionQueue.begin();
+                     it != localTransactionQueue.end(); it++) {
+                    (it->second)
+                        .set_value(datamodel_->Commit(
+                                       ((Transaction*)((it->first).get()))->ops)
+                                       ? CommitStatus::Success
+                                       : CommitStatus::Error);
                 }
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
