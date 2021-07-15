@@ -164,7 +164,7 @@ private:
             if ((i == table_count - 1) || (level == prev_level)) {
                 level_counter++;
             } else {
-                if (level_counter < table_limit_) {
+                if ((level_counter < table_limit_) || (level == table_limit_)) {
                     break;
                 }
                 level_counter = 1;

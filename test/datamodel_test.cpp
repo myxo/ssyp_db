@@ -126,7 +126,7 @@ TEST_CASE("Datamodel(empty values in table)", "[set get]") {
     REQUIRE(datamodel->GetValue("key", value) == false);
 }
 
-TEST_CASE("Datamodel(merge tables)", "[set get]") {
+ TEST_CASE("Datamodel(merge tables)", "[set get]") {
     DbSettings settings;
     settings.in_memory = true;
     settings.journal_limit = 1;
@@ -152,4 +152,52 @@ TEST_CASE("Datamodel(merge tables)", "[set get]") {
 
     REQUIRE(storage->GetTableList()->GetTable(0) ==
             "5 key 15 value4 key26 value24 key36 value3 2");
+}
+
+TEST_CASE("Datamodel(merge many tables)", "[set get]") {
+    DbSettings settings;
+    settings.in_memory = true;
+    settings.journal_limit = 1;
+    settings.table_limit = 3;
+    auto storage = CreateStorage(settings);
+    auto datamodel = CreateDatamodel(storage, settings);
+
+    Operations ops;
+    ops.push_back(Op{"key1", "value1", Op::Type::Update});
+    ops.push_back(Op{"key2", "value2", Op::Type::Update});
+
+    for (int i = 0; i < 21; i++) {
+        datamodel->Commit(ops);
+    }
+
+    REQUIRE(storage->GetTableList()->GetTable(0) ==
+            "4 key16 value14 key26 value2 3");
+    REQUIRE(storage->GetTableList()->GetTable(1) ==
+            "4 key16 value14 key26 value2 2");
+    REQUIRE(storage->GetTableList()->GetTable(2) ==
+            "4 key16 value14 key26 value2 1");
+}
+
+TEST_CASE("Datamodel(many tables on the last level)", "[set get]") {
+    DbSettings settings;
+    settings.in_memory = true;
+    settings.journal_limit = 1;
+    settings.table_limit = 2;
+    auto storage = CreateStorage(settings);
+    auto datamodel = CreateDatamodel(storage, settings);
+
+    Operations ops;
+    ops.push_back(Op{"key1", "value1", Op::Type::Update});
+    ops.push_back(Op{"key2", "value2", Op::Type::Update});
+
+    for (int i = 0; i < 9; i++) {
+        datamodel->Commit(ops);
+    }
+
+    REQUIRE(storage->GetTableList()->GetTable(0) ==
+            "4 key16 value14 key26 value2 2");
+    REQUIRE(storage->GetTableList()->GetTable(1) ==
+            "4 key16 value14 key26 value2 2");
+    REQUIRE(storage->GetTableList()->GetTable(2) ==
+            "4 key16 value14 key26 value2 2");
 }
