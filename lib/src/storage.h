@@ -39,15 +39,14 @@ public:
     virtual bool MergeTable(std::vector<size_t> merged_tables,
                             std::string result_table) = 0;
 };
-class StorageStatistic {
+
+struct StorageStatistic {
 public:
     ~StorageStatistic();
-
-protected:
-    int write_journal_count_ = 0;
-    int read_journal_count_ = 0;
-    int push_table_count_ = 0;
-    int merge_table_count_ = 0;
+    std::atomic_int write_journal_count_ = 0;
+    std::atomic_int read_journal_count_ = 0;
+    std::atomic_int push_table_count_ = 0;
+    std::atomic_int merge_table_count_ = 0;
     std::atomic_int read_table_count_ = 0;
 };
 
