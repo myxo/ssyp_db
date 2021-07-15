@@ -46,6 +46,7 @@ TEST_CASE("InMemoryTableList", "[push count get merge]") {
 
 TEST_CASE("Storage", "[journal]") {
     DbSettings settings;
+    std::remove("file.tablelist");
     std::remove("file.journal");
     settings.filename = "file";
     {
@@ -87,7 +88,7 @@ TEST_CASE("Journal with zero", "[]") {
     std::remove("file.journal");
 }
 
-TEST_CASE("InFileTableList", "[push count get merge]") {
+TEST_CASE("InFileTableList", "[push count get]") {
     std::remove("file.journal");
     std::remove("file.tablelist");
     DbSettings settings;
@@ -109,6 +110,10 @@ TEST_CASE("InFileTableList", "[push count get merge]") {
         REQUIRE(tables->TableCount() == 2);
         REQUIRE(tables->GetTable(1) == "key2value2");
     }
+}
+TEST_CASE("MergeTableList", "[merge]") {
+    DbSettings settings;
+    settings.filename = "file";
     {
         auto storage = CreateStorage(settings);
         auto tables = storage->GetTableList();
@@ -127,6 +132,20 @@ TEST_CASE("InFileTableList", "[push count get merge]") {
         auto tables = storage->GetTableList();
         REQUIRE(tables->TableCount() == 1);
         REQUIRE(tables->GetTable(0) == "key1,value1;key2value2");
+
+        storage->PushJournalToTable("key3,value3");
+        storage->PushJournalToTable("key4,value4");
+        tables = storage->GetTableList();
+        storage->MergeTable({0, 1, 2}, tables->GetTable(0) + ";" +
+                                           tables->GetTable(1) + ";" +
+                                           tables->GetTable(2));
+    }
+    {
+        auto storage = CreateStorage(settings);
+        auto tables = storage->GetTableList();
+        REQUIRE(tables->TableCount() == 1);
+        REQUIRE(tables->GetTable(0) ==
+                "key1,value1;key2value2;key3,value3;key4,value4");
     }
     std::remove("file.journal");
     std::remove("file.tablelist");
