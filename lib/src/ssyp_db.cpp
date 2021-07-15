@@ -23,7 +23,6 @@ public:
     }
     ~SsypDB() {
         stop_thread_ = true;
-        thread_notified = true;
         queue_check_.notify_one();
         commit_thread_.join();
     }
@@ -92,7 +91,6 @@ public:
         std::lock_guard lock(mutex_);
         transaction_ptr_queue_.push_back(
             std::make_pair(tx, std::move(promise)));
-        thread_notified = true;
         queue_check_.notify_one();
         return future;
     }
@@ -104,19 +102,14 @@ private:
     std::atomic_bool stop_thread_;
     std::thread commit_thread_;
     std::mutex mutex_;
-    std::mutex swap_mutex_;
-    std::atomic_bool thread_notified;
     std::condition_variable queue_check_;
 
     void CommitThreadCycle() {
         while (!stop_thread_.load()) {
-            std::unique_lock<std::mutex> locker(mutex_);
-            while (!thread_notified.load()) queue_check_.wait(locker);
-
             if (!transaction_ptr_queue_.empty()) {
                 decltype(transaction_ptr_queue_) local_transaction_queue;
                 {
-                    std::lock_guard lock(swap_mutex_);
+                    std::lock_guard lock(mutex_);
                     std::swap(local_transaction_queue, transaction_ptr_queue_);
                 }
 
@@ -127,7 +120,11 @@ private:
                             : CommitStatus::Error;
                     promise.set_value(status);
                 }
-                thread_notified = false;
+
+                std::unique_lock<std::mutex> locker(mutex_);
+                queue_check_.wait(locker, [&]() {
+                    return !transaction_ptr_queue_.empty() || stop_thread_;
+                });
             }
         }
     }
