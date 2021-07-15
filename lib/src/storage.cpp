@@ -39,7 +39,7 @@ private:
     std::atomic_int& read_table_count_;
 };
 
-class Storage : public IStorage {
+class Storage : public IStorage, public StorageStatistic {
 public:
     Storage(std::string filename)
         : journal_filename_(filename + ".journal"),
@@ -200,7 +200,7 @@ private:
     std::vector<int64_t> table_addresses_;
 };
 
-IStorage::~IStorage() {
+StorageStatistic::~StorageStatistic() {
     Debug("\tStorage statistic");
     Debug(std::format("{} {:10d}", "Journal writing:\t", write_journal_count_));
     Debug(std::format("{} {:10d}", "journal readings:\t", read_journal_count_));

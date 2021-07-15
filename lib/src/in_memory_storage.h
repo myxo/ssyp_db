@@ -13,7 +13,7 @@ private:
     std::atomic_int& read_table_count_;
 };
 
-class InMemoryStorage : public IStorage {
+class InMemoryStorage : public IStorage, public StorageStatistic {
 public:
     bool WriteToJournal(std::vector<std::string> ops) override;
     bool PushJournalToTable(std::string blob) override;

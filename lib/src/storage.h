@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <atomic>
 
 #include "../include/settings.h"
 
@@ -37,8 +38,10 @@ public:
 
     virtual bool MergeTable(std::vector<size_t> merged_tables,
                             std::string result_table) = 0;
-
-    ~IStorage();
+};
+class  StorageStatistic {
+public:
+    ~StorageStatistic();
 
 protected:
     int write_journal_count_ = 0;
@@ -47,6 +50,7 @@ protected:
     int merge_table_count_ = 0;
     std::atomic_int read_table_count_ = 0;
 };
+
 using IStoragePtr = std::shared_ptr<IStorage>;
 
 IStoragePtr CreateStorage(DbSettings settings);
