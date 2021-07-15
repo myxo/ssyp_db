@@ -6,11 +6,15 @@
 #include <set>
 
 #include "in_memory_storage.h"
+#include "logging.h"
 
 class TableList : public ITableList {
 public:
-    TableList(std::string filename, std::vector<int64_t> table_addresses)
-        : filename_(filename), table_addresses_(table_addresses) {}
+    TableList(std::string filename, std::vector<int64_t> table_addresses,
+              std::atomic_int& read_table_count)
+        : filename_(filename),
+          table_addresses_(table_addresses),
+          read_table_count_(read_table_count) {}
     size_t TableCount() const override { return table_addresses_.size(); }
     std::string GetTable(size_t index) const override {
         std::fstream file(filename_);
@@ -24,12 +28,14 @@ public:
         table.resize(len);
         file.read(table.data(), len);
         file.close();
+        read_table_count_++;
         return table;
     }
 
 private:
     std::string filename_;
     std::vector<int64_t> table_addresses_;
+    std::atomic_int& read_table_count_;
 };
 
 class Storage : public IStorage {
@@ -80,6 +86,7 @@ public:
             file << it;
         }
         file.close();
+        statistic_.write_journal_count_++;
         return true;
     }
     bool PushJournalToTable(std::string blob) override {
@@ -107,11 +114,13 @@ public:
         file.write((const char*)&last_element, sizeof(int64_t));
         file.close();
         std::remove(journal_filename_.c_str());
+        statistic_.push_table_count_++;
         return true;
     }
     ITableListPtr GetTableList() override {
         return std::make_shared<TableList>(tablelist_filename_,
-                                           table_addresses_);
+                                           table_addresses_,
+                                           statistic_.read_table_count_);
     }
     JournalBlob GetJournal() override {
         FILE* file = fopen(journal_filename_.c_str(), "rb");
@@ -146,6 +155,7 @@ public:
             }
         }
         fclose(file);
+        statistic_.read_journal_count_++;
         return journal;
     }
     bool MergeTable(std::vector<size_t> merged_tables,
@@ -180,6 +190,7 @@ public:
         table_addresses_.push_back(last_element);
         file.write((const char*)&last_element, sizeof(int64_t));
         file.close();
+        statistic_.merge_table_count_++;
         return false;
     }
 
@@ -187,7 +198,18 @@ private:
     std::string journal_filename_;
     std::string tablelist_filename_;
     std::vector<int64_t> table_addresses_;
+    StorageStatistic statistic_;
 };
+
+StorageStatistic::~StorageStatistic() {
+    Debug("\tStorage statistic");
+    Debug("Journal writing:\t" + std::to_string((int)write_journal_count_));
+    Debug("journal readings:\t" + std::to_string((int)read_journal_count_));
+    Debug("table pushings:\t\t" + std::to_string((int)push_table_count_));
+    Debug("table mergings:\t\t" + std::to_string((int)merge_table_count_));
+    Debug("table readings:\t\t" + std::to_string((int)read_table_count_));
+    Debug("\n");
+}
 
 IStoragePtr CreateStorage(DbSettings settings) {
     if (settings.in_memory) {
