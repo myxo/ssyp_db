@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <format>
 #include <fstream>
 #include <set>
 
@@ -202,12 +201,11 @@ private:
 
 StorageStatistic::~StorageStatistic() {
     Debug("\tStorage statistic");
-    Debug(std::format("{} {:10d}", "Journal writing:\t", write_journal_count_));
-    Debug(std::format("{} {:10d}", "journal readings:\t", read_journal_count_));
-    Debug(std::format("{} {:10d}", "table pushings:\t\t", push_table_count_));
-    Debug(std::format("{} {:10d}", "table mergings:\t\t", merge_table_count_));
-    Debug(std::format("{} {:10d}", "table readings:\t\t",
-                      (int)read_table_count_));
+    Debug("Journal writing:\t" + std::to_string(write_journal_count_));
+    Debug("journal readings:\t" + std::to_string(read_journal_count_));
+    Debug("table pushings:\t\t" + std::to_string(push_table_count_));
+    Debug("table mergings:\t\t" + std::to_string(merge_table_count_));
+    Debug("table readings:\t\t" + std::to_string((int)read_table_count_));
     Debug("\n");
 }
 

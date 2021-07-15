@@ -1,10 +1,10 @@
 #pragma once
 
+#include <atomic>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
-#include <atomic>
 
 #include "../include/settings.h"
 
@@ -39,7 +39,7 @@ public:
     virtual bool MergeTable(std::vector<size_t> merged_tables,
                             std::string result_table) = 0;
 };
-class  StorageStatistic {
+class StorageStatistic {
 public:
     ~StorageStatistic();
 
