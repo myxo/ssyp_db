@@ -13,14 +13,14 @@ TEST_CASE("InMemoryStorage", "[write get]") {
     REQUIRE(storage->GetJournal()[0] == "key,value");
 }
 
-TEST_CASE("InMemoryTableList", "[push count get]") {
+TEST_CASE("InMemoryTableList", "[push count get merge]") {
     DbSettings settings;
     settings.in_memory = true;
     auto storage = CreateStorage(settings);
-
-    auto tables = storage->GetTableList();
+    
     storage->WriteToJournal({"key1,value1"});
     storage->PushJournalToTable(storage->GetJournal()[0]);
+    auto tables = storage->GetTableList();
     REQUIRE(tables->TableCount() == storage->GetTableList()->TableCount());
     REQUIRE(tables->TableCount() == 1);
     REQUIRE(tables->GetTable(0) == "key1,value1");
@@ -28,8 +28,20 @@ TEST_CASE("InMemoryTableList", "[push count get]") {
 
     storage->WriteToJournal({"key2,value2"});
     storage->PushJournalToTable(storage->GetJournal()[0]);
+    tables = storage->GetTableList();
     REQUIRE(tables->TableCount() == 2);
     REQUIRE(tables->GetTable(1) == "key2,value2");
+
+    storage->MergeTable({0, 1},
+                        tables->GetTable(0) + ";" + tables->GetTable(1));
+    auto new_tables = storage->GetTableList();
+
+    REQUIRE(tables->TableCount() == 2);
+    REQUIRE(tables->GetTable(0) == "key1,value1");
+    REQUIRE(tables->GetTable(1) == "key2,value2");
+
+    REQUIRE(new_tables->TableCount() == 1);
+    REQUIRE(new_tables->GetTable(0) == "key1,value1;key2,value2");
 }
 
 TEST_CASE("Storage", "[journal]") {
