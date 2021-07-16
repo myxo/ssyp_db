@@ -1,8 +1,10 @@
 #include "datamodel.h"
+#include "logging.h"
 
 #include <map>
 #include <string>
 #include <unordered_set>
+#include <atomic>
 
 class Datamodel : public IDatamodel {
 public:
@@ -13,7 +15,11 @@ public:
         journal_limit_ = settings.journal_limit;
         table_limit_ = settings.table_limit;
         journal_->reserve(journal_limit_);
-        table_write_counter = 0;
+        commit_count_ = 0;
+        get_value_count_ = 0;
+        create_table_count_ = 0;
+        merge_tables_count_ = 0;
+        table_write_counter_ = 0;
     }
 
     bool Commit(Operations ops) {
@@ -22,10 +28,12 @@ public:
         if (journal_->size() + ops.size() > journal_limit_) {
             storage_->PushJournalToTable(TableToString(GenerateTable()));
             journal_ = std::make_shared<Operations>();
-            table_write_counter++;
-            if (table_write_counter > table_limit_) {
+            table_write_counter_++;
+            create_table_count_++;
+            if (table_write_counter_ > table_limit_) {
+                merge_tables_count_++;
                 MergeTablesCheck();
-                table_write_counter = 0;
+                table_write_counter_ = 0;
             }
         }
         for (auto const& op : ops) {
@@ -39,11 +47,13 @@ public:
             journal_->push_back(op);
         }
         storage_->WriteToJournal(output);
+        commit_count_++;
         return true;
     }
 
     bool GetValue(std::string key, std::string& value) {
         auto l_journal = journal_;
+        get_value_count_++;
         for (auto it = l_journal->rbegin(); it != l_journal->rend(); it++) {
             if (it->key == key) {
                 if (it->type == Op::Type::Update) {
@@ -71,12 +81,25 @@ public:
         return false;
     }
 
+    ~Datamodel() {
+        Debug("\nDataModel Statistics:\n");
+        Debug("Commits : " + std::to_string(commit_count_) + "\n");
+        Debug("GetValue: " + std::to_string(get_value_count_) + "\n");
+        Debug("Tables created : " + std::to_string(create_table_count_) + "\n");
+        Debug("Table merges : " + std::to_string(merge_tables_count_) = "\n");
+        Debug("\n");
+    }
+
 private:
     IStoragePtr storage_;
     std::shared_ptr<Operations> journal_;
     size_t journal_limit_;
     size_t table_limit_;
-    int table_write_counter;
+    int table_write_counter_;
+    std::atomic_int commit_count_;
+    std::atomic_int get_value_count_;
+    std::atomic_int create_table_count_;
+    std::atomic_int merge_tables_count_;
 
     Operations JournalToOps(std::vector<std::string> s) {
         Operations ops;
