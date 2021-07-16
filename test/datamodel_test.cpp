@@ -126,7 +126,7 @@ TEST_CASE("Datamodel(empty values in table)", "[set get]") {
     REQUIRE(datamodel->GetValue("key", value) == false);
 }
 
- TEST_CASE("Datamodel(merge tables)", "[set get]") {
+TEST_CASE("Datamodel(merge tables)", "[set get]") {
     DbSettings settings;
     settings.in_memory = true;
     settings.journal_limit = 1;

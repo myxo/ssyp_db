@@ -1,10 +1,11 @@
 #include "datamodel.h"
-#include "logging.h"
 
+#include <atomic>
 #include <map>
 #include <string>
 #include <unordered_set>
-#include <atomic>
+
+#include "logging.h"
 
 class Datamodel : public IDatamodel {
 public:
