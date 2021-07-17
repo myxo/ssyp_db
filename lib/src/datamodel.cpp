@@ -3,9 +3,8 @@
 #include <atomic>
 #include <map>
 #include <string>
-#include <unordered_set>
 
-#include "logging.h"
+#include "../include/logging.h"
 
 class Datamodel : public IDatamodel {
 public:
@@ -155,7 +154,7 @@ private:
         std::vector<std::string> values;
         for (int i = 0; i < last_space;) {
             int space_pos = s.find(' ', i);
-            int length = std::stoi(s.substr(i, space_pos));
+            int length = std::stoi(s.substr(i, space_pos - i));
             value = s.substr(space_pos + 1, length);
             values.push_back(value);
             i = space_pos + 1 + length;
