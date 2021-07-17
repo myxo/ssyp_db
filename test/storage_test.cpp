@@ -1,6 +1,7 @@
 #include "storage.h"
 
 #include <fstream>
+#include <thread>
 
 #include "catch2/catch.hpp"
 
@@ -147,6 +148,72 @@ TEST_CASE("MergeTableList", "[merge]") {
         REQUIRE(tables->GetTable(0) ==
                 "key1,value1;key2value2;key3,value3;key4,value4");
     }
+    std::remove("file.journal");
+    std::remove("file.tablelist");
+}
+
+TEST_CASE("InMemoryStorage multithreaded", "[]") {
+    DbSettings settings;
+    settings.in_memory = true;
+    auto storage = CreateStorage(settings);
+    bool stop = false;
+
+    std::thread t{[&] {
+        while (!stop) {
+            auto tables = storage->GetTableList();
+            for (int i = tables->TableCount() - 1; i >= 0; i--) {
+                std::string t = tables->GetTable(i);
+                // and here Datamodel try to read value
+            }
+        }
+    }};
+    for (int i = 0; i < 300; i++) {
+        storage->WriteToJournal({"key1,value1"});
+        storage->PushJournalToTable(storage->GetJournal()[0]);
+
+        storage->WriteToJournal({"key2,value2"});
+        storage->PushJournalToTable(storage->GetJournal()[0]);
+
+        auto tables = storage->GetTableList();
+        storage->MergeTable({0, 1},
+                            tables->GetTable(0) + ";" + tables->GetTable(1));
+    }
+    stop = true;
+    t.join();
+}
+
+TEST_CASE("InFileStorage multithreaded", "[]") {
+    std::remove("file.journal");
+    std::remove("file.tablelist");
+
+    DbSettings settings;
+    settings.filename = "file";
+    auto storage = CreateStorage(settings);
+    bool stop = false;
+
+    std::thread t{[&] {
+        while (!stop) {
+            auto tables = storage->GetTableList();
+            for (int i = tables->TableCount() - 1; i >= 0; i--) {
+                std::string t = tables->GetTable(i);
+                // and here Datamodel try to read value
+            }
+        }
+    }};
+    for (int i = 0; i < 57; i++) {
+        storage->WriteToJournal({"key1,value1"});
+        storage->PushJournalToTable(storage->GetJournal()[0]);
+
+        storage->WriteToJournal({"key2,value2"});
+        storage->PushJournalToTable(storage->GetJournal()[0]);
+
+        auto tables = storage->GetTableList();
+        storage->MergeTable({0, 1},
+                            tables->GetTable(0) + ";" + tables->GetTable(1));
+    }
+    stop = true;
+    t.join();
+
     std::remove("file.journal");
     std::remove("file.tablelist");
 }
