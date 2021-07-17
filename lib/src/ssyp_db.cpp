@@ -19,7 +19,7 @@ public:
     SsypDB(DbSettings settings)
         : datamodel_(CreateDatamodel(CreateStorage(settings), settings)) {
         commit_thread_ = std::thread(&SsypDB::CommitThreadCycle, this);
-        // commit_thread_.detach();
+	stop_thread_ = false;
     }
     ~SsypDB() {
         stop_thread_ = true;
@@ -120,11 +120,11 @@ private:
                             : CommitStatus::Error;
                     promise.set_value(status);
                 }
+                std::unique_lock<std::mutex> locker(mutex_);
+                queue_check_.wait(locker, [&]() {
+                    return !transaction_ptr_queue_.empty() || stop_thread_;
+                });
             }
-            std::unique_lock<std::mutex> locker(mutex_);
-            queue_check_.wait(locker, [&]() {
-                return !transaction_ptr_queue_.empty() || stop_thread_;
-            });
         }
     }
 };

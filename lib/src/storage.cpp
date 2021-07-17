@@ -2,6 +2,8 @@
 
 #include <cassert>
 #include <fstream>
+#include <cstdint>
+#include <limits>
 
 #include "in_memory_storage.h"
 
