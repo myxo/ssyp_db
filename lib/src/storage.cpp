@@ -20,21 +20,25 @@ public:
           table_addresses_(table_addresses),
           read_table_count_(read_table_count),
           mutex_(mtx) {}
-    size_t TableCount() const override { return table_addresses_.size(); }
+    size_t TableCount() const override {
+        std::lock_guard<std::mutex> guard(*mutex_);
+        return table_addresses_.size();
+    }
     std::string GetTable(size_t index) const override {
+        std::string table;
+        int64_t merged_table_arr_len;
+        int64_t len;
+        read_table_count_++;
+
         std::lock_guard<std::mutex> guard(*mutex_);
         std::fstream file(filename_);
         file.seekg(table_addresses_.at(index) + sizeof(int64_t), std::ios::beg);
-        int64_t merged_table_arr_len;
         file.read((char*)&merged_table_arr_len, sizeof(int64_t));
         file.seekg(merged_table_arr_len * sizeof(int64_t), std::ios::cur);
-        std::string table;
-        int64_t len;
         file.read((char*)&len, sizeof(int64_t));
         table.resize(len);
         file.read(table.data(), len);
         file.close();
-        read_table_count_++;
         return table;
     }
 
@@ -97,40 +101,42 @@ public:
         return true;
     }
     bool PushJournalToTable(std::string blob) override {
-        std::lock_guard<std::mutex> guard(*mutex_);
         int64_t last_element;
         {
+            std::lock_guard<std::mutex> guard(*mutex_);
             std::ifstream file(tablelist_filename_);
             file.seekg(-sizeof(int64_t), std::ios::end);
             last_element = table_addresses_.size() == 0 ? -sizeof(int64_t)
                                                         : (int64_t)file.tellg();
             file.close();
         }
-        std::ofstream file(tablelist_filename_,
-                           std::ios::app | std::ios::binary);
-        if (!file) {
-            throw std::runtime_error("Cannot open tablelist file: " +
-                                     tablelist_filename_);
-            return false;
-        }
         int64_t len = blob.size();
         int64_t merged_tables_len = 0;
-        file.write((const char*)&merged_tables_len, sizeof(int64_t));
-        file.write((const char*)&len, sizeof(int64_t));
-        file << blob;
-        table_addresses_.push_back(last_element);
-        file.write((const char*)&last_element, sizeof(int64_t));
-        file.close();
-        std::remove(journal_filename_.c_str());
+        {
+            std::lock_guard<std::mutex> guard(*mutex_);
+            std::ofstream file(tablelist_filename_,
+                               std::ios::app | std::ios::binary);
+            if (!file) {
+                throw std::runtime_error("Cannot open tablelist file: " +
+                                         tablelist_filename_);
+                return false;
+            }
+            file.write((const char*)&merged_tables_len, sizeof(int64_t));
+            file.write((const char*)&len, sizeof(int64_t));
+            file << blob;
+            table_addresses_.push_back(last_element);
+            file.write((const char*)&last_element, sizeof(int64_t));
+            file.close();
+            std::remove(journal_filename_.c_str());
+        }
         statistic_.push_table_count_++;
         return true;
     }
     ITableListPtr GetTableList() override {
         std::lock_guard<std::mutex> guard(*mutex_);
-        auto tables =
-            std::make_shared<TableList>(tablelist_filename_, table_addresses_,
-                                        statistic_.read_table_count_, mutex_);
-        return tables;
+        return std::make_shared<TableList>(
+            tablelist_filename_, table_addresses_, statistic_.read_table_count_,
+            mutex_);
     }
     JournalBlob GetJournal() override {
         FILE* file = fopen(journal_filename_.c_str(), "rb");
@@ -173,34 +179,37 @@ public:
         std::sort(merged_tables.begin(), merged_tables.end(),
                   std::greater<size_t>());
         int64_t last_element;
-        std::lock_guard<std::mutex> guard(*mutex_);
         {
+            std::lock_guard<std::mutex> guard(*mutex_);
             std::ifstream file(tablelist_filename_);
             file.seekg(-sizeof(int64_t), std::ios::end);
             last_element = table_addresses_.size() == 0 ? -sizeof(int64_t)
                                                         : (int64_t)file.tellg();
             file.close();
         }
-        std::ofstream file(tablelist_filename_,
-                           std::ios::app | std::ios::binary);
-        if (!file) {
-            throw std::runtime_error("Cannot open tablelist file: " +
-                                     tablelist_filename_);
-            return false;
-        }
         int64_t len = result_table.size();
         int64_t merged_tables_len = merged_tables.size();
-        file.write((const char*)&merged_tables_len, sizeof(int64_t));
-        for (int64_t it : merged_tables) {
-            file.write((const char*)&(table_addresses_.at(it)),
-                       sizeof(int64_t));
-            table_addresses_.erase(table_addresses_.begin() + it);
+        {
+            std::lock_guard<std::mutex> guard(*mutex_);
+            std::ofstream file(tablelist_filename_,
+                               std::ios::app | std::ios::binary);
+            if (!file) {
+                throw std::runtime_error("Cannot open tablelist file: " +
+                                         tablelist_filename_);
+                return false;
+            }
+            file.write((const char*)&merged_tables_len, sizeof(int64_t));
+            for (int64_t it : merged_tables) {
+                file.write((const char*)&(table_addresses_.at(it)),
+                           sizeof(int64_t));
+                table_addresses_.erase(table_addresses_.begin() + it);
+            }
+            file.write((const char*)&len, sizeof(int64_t));
+            file << result_table;
+            table_addresses_.push_back(last_element);
+            file.write((const char*)&last_element, sizeof(int64_t));
+            file.close();
         }
-        file.write((const char*)&len, sizeof(int64_t));
-        file << result_table;
-        table_addresses_.push_back(last_element);
-        file.write((const char*)&last_element, sizeof(int64_t));
-        file.close();
         statistic_.merge_table_count_++;
         return false;
     }
