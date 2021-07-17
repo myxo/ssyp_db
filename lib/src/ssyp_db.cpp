@@ -19,7 +19,6 @@ public:
     SsypDB(DbSettings settings)
         : datamodel_(CreateDatamodel(CreateStorage(settings), settings)) {
         commit_thread_ = std::thread(&SsypDB::CommitThreadCycle, this);
-        stop_thread_ = false;
     }
     ~SsypDB() {
         stop_thread_ = true;
@@ -99,33 +98,34 @@ private:
     IDatamodelPtr datamodel_;
     std::vector<std::pair<ITransactionPtr, std::promise<CommitStatus>>>
         transaction_ptr_queue_;
-    std::atomic_bool stop_thread_;
+    std::atomic_bool stop_thread_ = false;
     std::thread commit_thread_;
     std::mutex mutex_;
     std::condition_variable queue_check_;
 
     void CommitThreadCycle() {
         while (!stop_thread_.load()) {
-            if (!transaction_ptr_queue_.empty()) {
-                decltype(transaction_ptr_queue_) local_transaction_queue;
-                {
-                    std::lock_guard lock(mutex_);
-                    std::swap(local_transaction_queue, transaction_ptr_queue_);
-                }
-
-                for (auto& [tx, promise] : local_transaction_queue) {
-                    auto status =
-                        datamodel_->Commit(((Transaction*)(tx.get()))->ops)
-                            ? CommitStatus::Success
-                            : CommitStatus::Error;
-                    promise.set_value(status);
-                }
-                std::unique_lock<std::mutex> locker(mutex_);
-                queue_check_.wait(locker, [&]() {
-                    return !transaction_ptr_queue_.empty() || stop_thread_;
-                });
+            std::unique_lock<std::mutex> locker(mutex_);
+            queue_check_.wait(locker, [&]() {
+                return !transaction_ptr_queue_.empty() || stop_thread_;
+            });
+            decltype(transaction_ptr_queue_) local_transaction_queue;
+            std::swap(local_transaction_queue, transaction_ptr_queue_);
+	    locker.unlock();
+            for (auto& [tx, promise] : local_transaction_queue) {
+                auto status =
+                    datamodel_->Commit(((Transaction*)(tx.get()))->ops)
+                        ? CommitStatus::Success
+                        : CommitStatus::Error;
+                promise.set_value(status);
             }
         }
+	std::lock_guard lock(mutex_);
+	if (!transaction_ptr_queue_.empty()){
+            for (auto& [tx, promise] : transaction_ptr_queue_) {
+                promise.set_value(CommitStatus::Error);
+            }
+	}
     }
 };
 
