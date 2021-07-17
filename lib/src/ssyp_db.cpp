@@ -23,7 +23,7 @@ public:
     }
     ~SsypDB() {
         stop_thread_ = true;
-        queue_check_.notify_one();
+        queue_check_.notify_all();
         commit_thread_.join();
     }
     ITransactionPtr StartTransaction() override {
