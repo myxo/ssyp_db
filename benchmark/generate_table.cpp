@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <iostream>
 
+#include "logging.h"
 #include "ssyp_db.h"
 
 std::string GenerateValue(double kb_size) {
@@ -10,6 +11,7 @@ std::string GenerateValue(double kb_size) {
 }
 
 int main() {
+    SetLogLevel(LogLevel::Debug);
     DbSettings settings;
     settings.journal_limit = 1000;
     settings.filename = "big_bench";
@@ -24,6 +26,8 @@ int main() {
     std::cout << "Generate DB with " << commit_num
               << " operations. Size of each approx. " << value_size_kb
               << "kb\n";
+    std::cout << "Expected useful memory size (approx): "
+              << commit_num * value_size_kb / 1024 << "mb\n";
 
     auto start = std::chrono::system_clock::now();
     for (int i = 0; i < commit_num; i++) {
@@ -54,5 +58,7 @@ int main() {
     std::cout << "Journal size: " << journal_size / 1024 << " kb\n";
     std::cout << "Tables size: " << table_size / 1024 << " kb\n";
 
+    db.reset();
+    FlushLog();
     return 0;
 }

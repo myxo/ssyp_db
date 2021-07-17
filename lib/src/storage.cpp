@@ -202,12 +202,12 @@ private:
 };
 
 StorageStatistic::~StorageStatistic() {
-    Debug("\tStorage statistic");
-    Debug("Journal writing:\t" + std::to_string((int)write_journal_count_));
-    Debug("journal readings:\t" + std::to_string((int)read_journal_count_));
-    Debug("table pushings:\t\t" + std::to_string((int)push_table_count_));
-    Debug("table mergings:\t\t" + std::to_string((int)merge_table_count_));
-    Debug("table readings:\t\t" + std::to_string((int)read_table_count_));
+    Debug("Storage statistic");
+    Debug("\tJournal writing:\t" + std::to_string(write_journal_count_.load()));
+    Debug("\tjournal readings:\t" + std::to_string(read_journal_count_.load()));
+    Debug("\ttable pushings:\t\t" + std::to_string(push_table_count_.load()));
+    Debug("\ttable mergings:\t\t" + std::to_string(merge_table_count_.load()));
+    Debug("\ttable readings:\t\t" + std::to_string(read_table_count_.load()));
     Debug("\n");
 }
 
