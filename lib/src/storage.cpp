@@ -2,8 +2,8 @@
 
 #include <algorithm>
 #include <cassert>
-#include <fstream>
 #include <cstdint>
+#include <fstream>
 #include <limits>
 #include <set>
 

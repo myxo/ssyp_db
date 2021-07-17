@@ -19,7 +19,7 @@ public:
     SsypDB(DbSettings settings)
         : datamodel_(CreateDatamodel(CreateStorage(settings), settings)) {
         commit_thread_ = std::thread(&SsypDB::CommitThreadCycle, this);
-	stop_thread_ = false;
+        stop_thread_ = false;
     }
     ~SsypDB() {
         stop_thread_ = true;
