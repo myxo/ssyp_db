@@ -120,12 +120,11 @@ private:
                             : CommitStatus::Error;
                     promise.set_value(status);
                 }
-
-                std::unique_lock<std::mutex> locker(mutex_);
-                queue_check_.wait(locker, [&]() {
-                    return !transaction_ptr_queue_.empty() || stop_thread_;
-                });
             }
+            std::unique_lock<std::mutex> locker(mutex_);
+            queue_check_.wait(locker, [&]() {
+                return !transaction_ptr_queue_.empty() || stop_thread_;
+            });
         }
     }
 };
