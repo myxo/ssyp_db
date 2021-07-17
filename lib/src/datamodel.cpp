@@ -16,11 +16,6 @@ public:
         journal_limit_ = settings.journal_limit;
         table_limit_ = settings.table_limit;
         journal_->reserve(journal_limit_);
-        commit_count_ = 0;
-        get_value_count_ = 0;
-        create_table_count_ = 0;
-        merge_tables_count_ = 0;
-        table_write_counter_ = 0;
     }
 
     bool Commit(Operations ops) {
@@ -83,12 +78,11 @@ public:
     }
 
     ~Datamodel() {
-        Debug("\nDataModel Statistics:\n");
-        Debug("Commits : " + std::to_string(commit_count_) + "\n");
-        Debug("GetValue: " + std::to_string(get_value_count_) + "\n");
-        Debug("Tables created : " + std::to_string(create_table_count_) + "\n");
-        Debug("Table merges : " + std::to_string(merge_tables_count_) = "\n");
-        Debug("\n");
+        Debug("DataModel Statistics:");
+        Debug("\tCommits : " + std::to_string(commit_count_));
+        Debug("\tGetValue: " + std::to_string(get_value_count_));
+        Debug("\tTables created : " + std::to_string(create_table_count_));
+        Debug("\tTable merges : " + std::to_string(merge_tables_count_));
     }
 
 private:
@@ -96,11 +90,11 @@ private:
     std::shared_ptr<Operations> journal_;
     size_t journal_limit_;
     size_t table_limit_;
-    int table_write_counter_;
-    std::atomic_int commit_count_;
-    std::atomic_int get_value_count_;
-    std::atomic_int create_table_count_;
-    std::atomic_int merge_tables_count_;
+    int table_write_counter_ = 0;
+    std::atomic_int commit_count_ = 0;
+    std::atomic_int get_value_count_ = 0;
+    std::atomic_int create_table_count_ = 0;
+    std::atomic_int merge_tables_count_ = 0;
 
     Operations JournalToOps(std::vector<std::string> s) {
         Operations ops;
