@@ -111,7 +111,7 @@ private:
             });
             decltype(transaction_ptr_queue_) local_transaction_queue;
             std::swap(local_transaction_queue, transaction_ptr_queue_);
-	    locker.unlock();
+            locker.unlock();
             for (auto& [tx, promise] : local_transaction_queue) {
                 auto status =
                     datamodel_->Commit(((Transaction*)(tx.get()))->ops)
@@ -120,12 +120,12 @@ private:
                 promise.set_value(status);
             }
         }
-	std::lock_guard lock(mutex_);
-	if (!transaction_ptr_queue_.empty()){
+        std::lock_guard lock(mutex_);
+        if (!transaction_ptr_queue_.empty()) {
             for (auto& [tx, promise] : transaction_ptr_queue_) {
                 promise.set_value(CommitStatus::Error);
             }
-	}
+        }
     }
 };
 
