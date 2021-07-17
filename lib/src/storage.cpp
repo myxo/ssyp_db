@@ -4,6 +4,7 @@
 #include <cassert>
 #include <chrono>
 #include <fstream>
+#include <mutex>
 #include <set>
 #include <thread>
 
@@ -13,18 +14,15 @@
 class TableList : public ITableList {
 public:
     TableList(std::string filename, std::vector<int64_t> table_addresses,
-              std::atomic_int& read_table_count, std::atomic_bool& is_writting,
-              std::atomic_bool& is_reading)
+              std::atomic_int& read_table_count,
+              std::shared_ptr<std::mutex> mtx)
         : filename_(filename),
           table_addresses_(table_addresses),
           read_table_count_(read_table_count),
-          is_writting_(is_writting),
-          is_reading_(is_reading) {}
+          mutex_(mtx) {}
     size_t TableCount() const override { return table_addresses_.size(); }
     std::string GetTable(size_t index) const override {
-        while (is_writting_)
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        is_reading_ = true;
+        std::lock_guard<std::mutex> guard(*mutex_);
         std::fstream file(filename_);
         file.seekg(table_addresses_.at(index) + sizeof(int64_t), std::ios::beg);
         int64_t merged_table_arr_len;
@@ -37,7 +35,6 @@ public:
         file.read(table.data(), len);
         file.close();
         read_table_count_++;
-        is_reading_ = false;
         return table;
     }
 
@@ -45,8 +42,7 @@ private:
     std::string filename_;
     std::vector<int64_t> table_addresses_;
     std::atomic_int& read_table_count_;
-    std::atomic_bool& is_writting_;
-    std::atomic_bool& is_reading_;
+    std::shared_ptr<std::mutex> mutex_;
 };
 
 class Storage : public IStorage {
@@ -54,7 +50,6 @@ public:
     Storage(std::string filename)
         : journal_filename_(filename + ".journal"),
           tablelist_filename_(filename + ".tablelist") {
-        is_writting_ = true;
         std::ifstream tables_file(tablelist_filename_);
         if (!tables_file) {
             tables_file.close();
@@ -81,7 +76,6 @@ public:
             table_addresses_.push_back(-sizeof(int64_t));
         std::reverse(std::begin(table_addresses_), std::end(table_addresses_));
         tables_file.close();
-        is_writting_ = false;
     }
     bool WriteToJournal(std::vector<std::string> ops) override {
         std::ofstream file(journal_filename_, std::ios::app | std::ios::binary);
@@ -103,9 +97,7 @@ public:
         return true;
     }
     bool PushJournalToTable(std::string blob) override {
-        while (is_reading_)
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        is_writting_ = true;
+        std::lock_guard<std::mutex> guard(*mutex_);
         int64_t last_element;
         {
             std::ifstream file(tablelist_filename_);
@@ -131,17 +123,13 @@ public:
         file.close();
         std::remove(journal_filename_.c_str());
         statistic_.push_table_count_++;
-        is_writting_ = false;
         return true;
     }
     ITableListPtr GetTableList() override {
-        while (is_writting_)
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        is_reading_ = true;
-        auto tables = std::make_shared<TableList>(
-            tablelist_filename_, table_addresses_, statistic_.read_table_count_,
-            is_writting_, is_reading_);
-        is_reading_ = false;
+        std::lock_guard<std::mutex> guard(*mutex_);
+        auto tables =
+            std::make_shared<TableList>(tablelist_filename_, table_addresses_,
+                                        statistic_.read_table_count_, mutex_);
         return tables;
     }
     JournalBlob GetJournal() override {
@@ -182,12 +170,10 @@ public:
     }
     bool MergeTable(std::vector<size_t> merged_tables,
                     std::string result_table) {
-        while (is_reading_)
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        is_writting_ = true;
         std::sort(merged_tables.begin(), merged_tables.end(),
                   std::greater<size_t>());
         int64_t last_element;
+        std::lock_guard<std::mutex> guard(*mutex_);
         {
             std::ifstream file(tablelist_filename_);
             file.seekg(-sizeof(int64_t), std::ios::end);
@@ -216,7 +202,6 @@ public:
         file.write((const char*)&last_element, sizeof(int64_t));
         file.close();
         statistic_.merge_table_count_++;
-        is_writting_ = false;
         return false;
     }
 
@@ -225,8 +210,7 @@ private:
     std::string tablelist_filename_;
     std::vector<int64_t> table_addresses_;
     StorageStatistic statistic_;
-    std::atomic_bool is_writting_ = false;
-    std::atomic_bool is_reading_ = false;
+    std::shared_ptr<std::mutex> mutex_ = std::make_shared<std::mutex>();
 };
 
 StorageStatistic::~StorageStatistic() {
