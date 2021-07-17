@@ -12,6 +12,11 @@ struct Op {
     Type type;
 };
 
+struct Table {
+    std::map<std::string, std::string> table_data;
+    int table_level;
+};
+
 using Operations = std::vector<Op>;
 
 class IDatamodel {

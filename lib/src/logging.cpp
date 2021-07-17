@@ -17,6 +17,17 @@ void SetLogLevel(LogLevel level) { globalLevel = level; }
 
 void StopLogThread() { stopThread = 1; }
 
+void FlushLog() {
+    while (true) {
+        std::unique_lock lock(mutex);
+        if (logsQueue.empty()) {
+            return;
+        }
+        lock.unlock();
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+}
+
 void LogThreadCycle() {
     while (!stopThread) {
         if (!logsQueue.empty()) {
@@ -28,7 +39,7 @@ void LogThreadCycle() {
 
             for (auto it = localLogsQueue.begin(); it != localLogsQueue.end();
                  it++) {
-                std::cout << *it + '\n';
+                std::cout << *it << '\n';
             }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -41,6 +52,7 @@ void InitializeLogThread() {
     }
     logThread = std::thread(LogThreadCycle);
     logThread.detach();
+    isLogThread = true;
 }
 // TODO: deinitialize
 

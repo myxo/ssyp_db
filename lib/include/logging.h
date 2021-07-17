@@ -11,3 +11,4 @@ void Debug(std::string input);
 void Error(std::string input);
 
 void StopLogThread();
+void FlushLog();

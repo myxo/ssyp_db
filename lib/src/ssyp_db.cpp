@@ -1,4 +1,4 @@
-#include "../include/ssyp_db.h"
+#include "ssyp_db.h"
 
 #include <atomic>
 #include <chrono>
