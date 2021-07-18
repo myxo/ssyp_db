@@ -1,5 +1,6 @@
 #pragma once
 
+#include <future>
 #include <memory>
 #include <string>
 
@@ -31,7 +32,7 @@ public:
     virtual bool GetValue(std::string key, double& value) = 0;
     virtual bool GetValue(std::string key, bool& value) = 0;
 
-    virtual CommitStatus Commit(ITransactionPtr tx) = 0;
+    virtual std::future<CommitStatus> Commit(ITransactionPtr tx) = 0;
 };
 
 std::shared_ptr<ISsypDB> CreateDb(DbSettings settings);
