@@ -23,6 +23,8 @@ public:
         if (journal_->size() + ops.size() > journal_limit_) {
             storage_->PushJournalToTable(TableToString(GenerateTable()));
             journal_ = std::make_shared<Operations>();
+            journal_->reserve(journal_limit_);
+            journal_size_ = 0;
             table_write_counter_++;
             create_table_count_++;
             if (table_write_counter_ > table_limit_) {
@@ -40,6 +42,7 @@ public:
             temp += " " + std::to_string(op.key.size());
             output.push_back(temp);
             journal_->push_back(op);
+            journal_size_++;
         }
         storage_->WriteToJournal(output);
         commit_count_++;
@@ -47,12 +50,13 @@ public:
     }
 
     bool GetValue(std::string key, std::string& value) {
-        auto l_journal = *journal_.get();
+        auto l_journal = journal_;
         get_value_count_++;
-        for (int i = l_journal.size() - 1; i >= 0; i--) {
-            if (l_journal[i].key == key) {
-                if (l_journal[i].type == Op::Type::Update) {
-                    value = l_journal[i].value;
+        for (int i = journal_size_ - 1; i >= 0; i--) {
+            auto it = l_journal->begin() + i;
+            if (it->key == key) {
+                if (it->type == Op::Type::Update) {
+                    value = it->value;
                     return true;
                 } else {
                     return false;
@@ -94,6 +98,7 @@ private:
     std::atomic_int get_value_count_ = 0;
     std::atomic_int create_table_count_ = 0;
     std::atomic_int merge_tables_count_ = 0;
+    std::atomic_int journal_size_ = 0;
 
     Operations JournalToOps(std::vector<std::string> s) {
         Operations ops;
