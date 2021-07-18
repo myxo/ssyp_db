@@ -10,6 +10,7 @@
 #include <set>
 #include <thread>
 
+#include "CRC/CRC.h"
 #include "in_memory_storage.h"
 #include "logging.h"
 
@@ -91,8 +92,8 @@ public:
             return false;
         }
         for (auto const it : ops) {
-            uint32_t tmp = std::hash<std::string>{}(it) %
-                           std::numeric_limits<std::uint32_t>::max();
+            uint32_t tmp =
+                CRC::Calculate(it.c_str(), sizeof(it.c_str()), CRC::CRC_32());
             file.write((const char*)&tmp, sizeof(uint32_t));
             tmp = (it.size());
             file.write((const char*)&tmp, sizeof(int32_t));
@@ -156,9 +157,9 @@ public:
             journal.push_back({});
             journal.back().resize(len);
             fread(journal.back().data(), sizeof(char), len, file);
-            if (std::hash<std::string>{}(journal.back()) %
-                    std::numeric_limits<std::uint32_t>::max() ==
-                hash) {
+            if (CRC::Calculate(journal.back().c_str(),
+                               sizeof(journal.back().c_str()),
+                               CRC::CRC_32()) == hash) {
                 if (is_journal_damaged) {
                     throw std::runtime_error("The journal is damaged");
                     break;
