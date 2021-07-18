@@ -33,9 +33,9 @@ public:
         }
         for (auto const& op : ops) {
             if (op.type == Op::Type::Remove) {
-                temp = "Remove " + op.key;
+                temp = "r" + op.key;
             } else {
-                temp = "Update " + op.key + " " + op.value;
+                temp = "u" + op.key + op.value;
             }
             temp += " " + std::to_string(op.key.size());
             output.push_back(temp);
@@ -47,12 +47,12 @@ public:
     }
 
     bool GetValue(std::string key, std::string& value) {
-        auto l_journal = journal_;
+        auto l_journal = *journal_.get();
         get_value_count_++;
-        for (auto it = l_journal->rbegin(); it != l_journal->rend(); it++) {
-            if (it->key == key) {
-                if (it->type == Op::Type::Update) {
-                    value = it->value;
+        for (int i = l_journal.size() - 1; i >= 0; i--) {
+            if (l_journal[i].key == key) {
+                if (l_journal[i].type == Op::Type::Update) {
+                    value = l_journal[i].value;
                     return true;
                 } else {
                     return false;
@@ -105,17 +105,15 @@ private:
 
     Op StringToOp(std::string const& s) const {
         Op op;
-        int first_space = s.find(' ');
         int last_space = s.find_last_of(' ');
         int key_length = std::stoi(s.substr(last_space + 1));
         std::string type, key, value;
-        type = s.substr(0, first_space);
-        key = s.substr(first_space + 1, key_length);
-        value = s.substr(first_space + key_length + 2,
-                         last_space - first_space - key_length - 2);
+        type = s[0];
+        key = s.substr(1, key_length);
+        value = s.substr(key_length + 1, last_space - key_length - 1);
         op.key = key;
         op.value = value;
-        if (type == "Update") {
+        if (type == "u") {
             op.type = Op::Type::Update;
         } else {
             op.type = Op::Type::Remove;

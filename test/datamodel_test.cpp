@@ -17,7 +17,7 @@ TEST_CASE("Datamodel(set get)", "[set get]") {
     datamodel->GetValue("key", value);
 
     REQUIRE(value == "value");
-    REQUIRE(storage->GetJournal()[0] == "Update key value 3");
+    REQUIRE(storage->GetJournal()[0] == "ukeyvalue 3");
 }
 
 TEST_CASE("Datamodel(set + remove get)", "[set get]") {
