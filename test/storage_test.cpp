@@ -200,7 +200,7 @@ TEST_CASE("InFileStorage multithreaded", "[]") {
             }
         }
     }};
-    for (int i = 0; i < 57; i++) {
+    for (int i = 0; i < 50; i++) {
         storage->WriteToJournal({"key1,value1"});
         storage->PushJournalToTable(storage->GetJournal()[0]);
 
