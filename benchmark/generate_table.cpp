@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 #include "logging.h"
 #include "ssyp_db.h"
@@ -61,6 +62,8 @@ int main(int argc, char* argv[]) {
         ReadValues(db, commit_num, 1);
     });
 
+    std::vector<std::future<CommitStatus>> futures;
+
     auto start = std::chrono::system_clock::now();
     for (int i = 0; i < commit_num; i++) {
         std::string key = "key_";
@@ -69,7 +72,11 @@ int main(int argc, char* argv[]) {
 
         auto tx = db->StartTransaction();
         db->SetValue(key, value, tx);
-        db->Commit(tx);
+        futures.push_back(db->Commit(tx));
+    }
+
+    for (auto & f : futures) {
+        f.wait();
     }
     auto end = std::chrono::system_clock::now();
     const double elapsed_sec = GetElapsedSec(start, end);
